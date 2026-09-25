@@ -22,7 +22,15 @@
       unsupportedMedia: 'This version cannot open attached media.', tooManyLessons: 'The lesson limit has been reached.',
       storageUnavailable: 'Browser storage is unavailable. Export your lessons as a JSON file before closing.', storageFull: 'Could not cache the lessons. Export a JSON backup now.',
       fileTooLarge: 'The selected JSON file is too large for this starter.', duplicateSuffix: 'copy', endOfDeck: 'Finished! Start again or choose another language pair.',
-      discardChanges: 'Discard unsaved changes?', tooManyItems: 'This lesson has reached the word limit.'
+      discardChanges: 'Discard unsaved changes?', tooManyItems: 'This lesson has reached the word limit.',
+      chooseActivity: 'Choose an activity', activity: 'Activity', quiz: 'Multiple choice', matching: 'Match pairs', typing: 'Type the answer',
+      soundOn: 'Sound on', soundOff: 'Sound off', yourAnswer: 'Your answer', check: 'Check', readyItems: '{count} usable words',
+      needFour: 'This activity needs at least four distinct pairs in the selected languages.', score: 'Correct: {score}',
+      correct: 'Correct!', correctAnswer: 'The answer is {answer}.', enterAnswer: 'Type an answer first.',
+      roundCount: 'Round {current} of {total}', matchedCount: 'Matched {count} of {total}',
+      matchInstruction: 'Choose one word in each column to make a pair.', tryAnother: 'Try another pair.',
+      nextRound: 'Next round', seeResults: 'See results', roundComplete: 'Round complete!',
+      matchResults: 'You matched every pair in {attempts} attempts.', finalScore: 'You got {score} of {total} correct.'
     },
     pl: {
       skip: 'Przejdź do treści', interfaceLanguage: 'Język interfejsu', yourCollection: 'Twoja kolekcja', lessons: 'Lekcje', newLesson: 'Nowa lekcja',
@@ -45,7 +53,15 @@
       unsupportedMedia: 'Ta wersja nie otwiera załączonych multimediów.', tooManyLessons: 'Osiągnięto limit lekcji.',
       storageUnavailable: 'Pamięć przeglądarki jest niedostępna. Przed zamknięciem wyeksportuj lekcje do pliku JSON.', storageFull: 'Nie udało się zapisać kopii w przeglądarce. Wyeksportuj plik JSON.',
       fileTooLarge: 'Wybrany plik JSON jest za duży.', duplicateSuffix: 'kopia', endOfDeck: 'Koniec! Zacznij ponownie lub wybierz inne języki.',
-      discardChanges: 'Odrzucić niezapisane zmiany?', tooManyItems: 'Osiągnięto limit słów w tej lekcji.'
+      discardChanges: 'Odrzucić niezapisane zmiany?', tooManyItems: 'Osiągnięto limit słów w tej lekcji.',
+      chooseActivity: 'Wybierz ćwiczenie', activity: 'Ćwiczenie', quiz: 'Wielokrotny wybór', matching: 'Dobieranie par', typing: 'Wpisz odpowiedź',
+      soundOn: 'Dźwięk włączony', soundOff: 'Dźwięk wyłączony', yourAnswer: 'Twoja odpowiedź', check: 'Sprawdź', readyItems: 'Dostępne słowa: {count}',
+      needFour: 'To ćwiczenie wymaga co najmniej czterech różnych par w wybranych językach.', score: 'Poprawne: {score}',
+      correct: 'Dobrze!', correctAnswer: 'Poprawna odpowiedź: {answer}.', enterAnswer: 'Najpierw wpisz odpowiedź.',
+      roundCount: 'Runda {current} z {total}', matchedCount: 'Dopasowano {count} z {total}',
+      matchInstruction: 'Wybierz po jednym słowie z każdej kolumny, aby utworzyć parę.', tryAnother: 'Spróbuj innej pary.',
+      nextRound: 'Następna runda', seeResults: 'Pokaż wynik', roundComplete: 'Koniec rundy!',
+      matchResults: 'Dopasowano wszystkie pary w {attempts} próbach.', finalScore: 'Poprawne odpowiedzi: {score} z {total}.'
     },
     ar: {
       skip: 'انتقل إلى المحتوى', interfaceLanguage: 'لغة الواجهة', yourCollection: 'مجموعتك', lessons: 'الدروس', newLesson: 'درس جديد',
@@ -68,7 +84,15 @@
       unsupportedMedia: 'لا تدعم هذه النسخة المرفقات الصوتية أو الصور.', tooManyLessons: 'تم بلوغ الحد الأقصى للدروس.',
       storageUnavailable: 'تخزين المتصفح غير متاح. صدّر الدروس إلى ملف JSON قبل الإغلاق.', storageFull: 'تعذّر حفظ نسخة في المتصفح. صدّر نسخة JSON الآن.',
       fileTooLarge: 'ملف JSON المحدد كبير جدًا.', duplicateSuffix: 'نسخة', endOfDeck: 'انتهيت! ابدأ مرة أخرى أو اختر لغتين أخريين.',
-      discardChanges: 'هل تريد تجاهل التغييرات غير المحفوظة؟', tooManyItems: 'بلغ هذا الدرس الحد الأقصى للكلمات.'
+      discardChanges: 'هل تريد تجاهل التغييرات غير المحفوظة؟', tooManyItems: 'بلغ هذا الدرس الحد الأقصى للكلمات.',
+      chooseActivity: 'اختر نشاطًا', activity: 'النشاط', quiz: 'اختيار من متعدد', matching: 'وصل الأزواج', typing: 'اكتب الإجابة',
+      soundOn: 'الصوت مفعّل', soundOff: 'الصوت مكتوم', yourAnswer: 'إجابتك', check: 'تحقق', readyItems: 'كلمات متاحة: {count}',
+      needFour: 'يحتاج هذا النشاط إلى أربعة أزواج مختلفة على الأقل باللغتين المختارتين.', score: 'إجابات صحيحة: {score}',
+      correct: 'صحيح!', correctAnswer: 'الإجابة الصحيحة: {answer}.', enterAnswer: 'اكتب إجابة أولًا.',
+      roundCount: 'الجولة {current} من {total}', matchedCount: 'تم وصل {count} من {total}',
+      matchInstruction: 'اختر كلمة من كل عمود لتكوين زوج.', tryAnother: 'جرّب زوجًا آخر.',
+      nextRound: 'الجولة التالية', seeResults: 'عرض النتائج', roundComplete: 'انتهت الجولة!',
+      matchResults: 'وصلت جميع الأزواج خلال {attempts} محاولة.', finalScore: 'أجبت إجابة صحيحة عن {score} من {total}.'
     },
     de: {
       skip: 'Zum Inhalt springen', interfaceLanguage: 'Sprache der Oberfläche', yourCollection: 'Deine Sammlung', lessons: 'Lektionen', newLesson: 'Neue Lektion',
@@ -91,7 +115,15 @@
       unsupportedMedia: 'Diese Version kann Medienanhänge nicht öffnen.', tooManyLessons: 'Die Höchstzahl der Lektionen ist erreicht.',
       storageUnavailable: 'Browserspeicher ist nicht verfügbar. Exportiere die Lektionen vor dem Schließen als JSON.', storageFull: 'Lektionen konnten nicht im Browser gespeichert werden. Exportiere jetzt eine JSON-Sicherung.',
       fileTooLarge: 'Die ausgewählte JSON-Datei ist zu groß.', duplicateSuffix: 'Kopie', endOfDeck: 'Fertig! Starte erneut oder wähle andere Sprachen.',
-      discardChanges: 'Ungespeicherte Änderungen verwerfen?', tooManyItems: 'Diese Lektion hat die Höchstzahl an Wörtern erreicht.'
+      discardChanges: 'Ungespeicherte Änderungen verwerfen?', tooManyItems: 'Diese Lektion hat die Höchstzahl an Wörtern erreicht.',
+      chooseActivity: 'Aktivität wählen', activity: 'Aktivität', quiz: 'Mehrfachauswahl', matching: 'Paare zuordnen', typing: 'Antwort eingeben',
+      soundOn: 'Ton an', soundOff: 'Ton aus', yourAnswer: 'Deine Antwort', check: 'Prüfen', readyItems: '{count} nutzbare Wörter',
+      needFour: 'Diese Aktivität braucht mindestens vier unterschiedliche Paare in den gewählten Sprachen.', score: 'Richtig: {score}',
+      correct: 'Richtig!', correctAnswer: 'Die Antwort ist {answer}.', enterAnswer: 'Gib zuerst eine Antwort ein.',
+      roundCount: 'Runde {current} von {total}', matchedCount: '{count} von {total} zugeordnet',
+      matchInstruction: 'Wähle ein Wort aus jeder Spalte, um ein Paar zu bilden.', tryAnother: 'Versuche ein anderes Paar.',
+      nextRound: 'Nächste Runde', seeResults: 'Ergebnis ansehen', roundComplete: 'Runde beendet!',
+      matchResults: 'Alle Paare in {attempts} Versuchen zugeordnet.', finalScore: '{score} von {total} richtig.'
     }
   };
   root.WordsI18n = { strings, languageNames: { en: 'english', pl: 'polish', ar: 'arabic', de: 'german' } };

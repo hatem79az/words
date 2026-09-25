@@ -10,7 +10,8 @@ Download the repository as a ZIP, extract it, and open `index.html` in a current
 
 - Create, edit, duplicate, and delete named lessons.
 - Add vocabulary entries with terms in any of the four languages. An entry needs at least two terms to be usable as a flashcard.
-- Choose a front and back language, reveal the answer, and move through the eligible cards.
+- Choose a front and back language, then practise with flashcards, multiple choice, matching pairs, or typed spelling. Games show when a lesson lacks enough distinct pairs.
+- Hear short local feedback cues for answers and mute them at any time. Reduced-motion system preferences are respected.
 - Change the interface language. Arabic uses a right-to-left layout; individual term fields retain their correct writing direction.
 - Export all lessons to a JSON file and import that file on this or another computer.
 
@@ -23,8 +24,12 @@ index.html       Main screen and accessible controls
 css/style.css    Responsive and RTL styling
 js/model.js      Versioned lesson data, validation, and flashcard selection
 js/i18n.js       English, Polish, Arabic, and German interface strings
+js/games.js      Shared game eligibility, choices, matching rounds, spelling comparison
+js/effects.js    Local feedback sound and reduced-motion-aware animation
 js/app.js        Browser interactions and local file import/export
 tests/           Data model checks (development only)
+docs/            Two-phase build plan and activity inventory
+NEXT_JOB.md      The next concrete task, updated with every merged app change
 ```
 
 The lesson format uses language codes as keys, for example:
@@ -45,4 +50,4 @@ There are no runtime dependencies or build step. If Node.js is installed, run `n
 
 ## Next stage
 
-Add a managed media library, more game templates using the same lesson items, and durable folder-based saving in a Windows wrapper. The current JSON format is versioned so it can be migrated. Windows packaging has intentionally not started.
+Follow [NEXT_JOB.md](NEXT_JOB.md). The full activity inventory and quality gates are in [docs/BUILD_PLAN.md](docs/BUILD_PLAN.md). Windows packaging is phase 2 and has intentionally not started.
