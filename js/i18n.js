@@ -42,7 +42,15 @@
       needAudio: 'Add four distinct recordings in the front language and matching words.', pictureChoice: 'Picture choice',
       listenChoose: 'Listen and choose', picturePrompt: 'Which word matches the picture?', listenPrompt: 'Listen, then choose the matching word.',
       pictureClue: 'Picture clue', mediaHint: 'Add pictures and pronunciation inside each word. Images are copied as compact WebP; your originals stay in place.',
-      saveBeforeExport: 'Save your lesson before exporting so the new words and attachments are included.'
+      saveBeforeExport: 'Save your lesson before exporting so the new words and attachments are included.',
+      letterTiles: 'Letter tiles', missingLettersGame: 'Missing letters', listenType: 'Listen and type',
+      needSpellingWords: 'Add distinct single words with at least three letters (four for missing letters) in the answer language.',
+      needGraphemeSupport: 'This browser cannot safely split letters for this game. Use a current browser.',
+      needRecordedAnswers: 'Add an answer-language recording to at least one distinct word.',
+      listenTypePrompt: 'Listen, then write what you hear.', missingLetters: 'Missing letters in order', spellWhatYouHear: 'Word you heard',
+      wordPattern: 'Word with gaps: {pattern}', assembledWord: 'Your assembled word', selectTiles: 'Choose letters below',
+      removeTile: 'Remove {letter}', availableTiles: 'Available letters', addTile: 'Add {letter}', clearTiles: 'Clear',
+      trySpellingAgain: 'Not quite. Try once more.'
     },
     pl: {
       skip: 'Przejdź do treści', interfaceLanguage: 'Język interfejsu', yourCollection: 'Twoja kolekcja', lessons: 'Lekcje', newLesson: 'Nowa lekcja',
@@ -85,7 +93,15 @@
       needAudio: 'Dodaj cztery różne nagrania w języku z przodu karty i pasujące słowa.', pictureChoice: 'Wybór obrazu',
       listenChoose: 'Słuchaj i wybierz', picturePrompt: 'Które słowo pasuje do obrazu?', listenPrompt: 'Posłuchaj i wybierz pasujące słowo.',
       pictureClue: 'Wskazówka obrazkowa', mediaHint: 'Dodaj obrazy i wymowę do każdego słowa. Obrazy są kopiowane jako małe pliki WebP; oryginały pozostają na miejscu.',
-      saveBeforeExport: 'Zapisz lekcję przed eksportem, aby dołączyć nowe słowa i pliki.'
+      saveBeforeExport: 'Zapisz lekcję przed eksportem, aby dołączyć nowe słowa i pliki.',
+      letterTiles: 'Układanie liter', missingLettersGame: 'Brakujące litery', listenType: 'Słuchaj i pisz',
+      needSpellingWords: 'Dodaj różne pojedyncze słowa z co najmniej trzema literami (czterema dla brakujących liter) w języku odpowiedzi.',
+      needGraphemeSupport: 'Ta przeglądarka nie potrafi bezpiecznie dzielić słów na litery. Użyj aktualnej przeglądarki.',
+      needRecordedAnswers: 'Dodaj nagranie w języku odpowiedzi do co najmniej jednego różnego słowa.',
+      listenTypePrompt: 'Posłuchaj i napisz to, co słyszysz.', missingLetters: 'Brakujące litery po kolei', spellWhatYouHear: 'Usłyszane słowo',
+      wordPattern: 'Słowo z lukami: {pattern}', assembledWord: 'Ułożone słowo', selectTiles: 'Wybierz litery poniżej',
+      removeTile: 'Usuń {letter}', availableTiles: 'Dostępne litery', addTile: 'Dodaj {letter}', clearTiles: 'Wyczyść',
+      trySpellingAgain: 'Jeszcze nie. Spróbuj ponownie.'
     },
     ar: {
       skip: 'انتقل إلى المحتوى', interfaceLanguage: 'لغة الواجهة', yourCollection: 'مجموعتك', lessons: 'الدروس', newLesson: 'درس جديد',
@@ -128,7 +144,15 @@
       needAudio: 'أضف أربعة تسجيلات مختلفة بلغة الوجه الأمامي وكلمات مطابقة.', pictureChoice: 'اختر الكلمة للصورة',
       listenChoose: 'استمع واختر', picturePrompt: 'أي كلمة تناسب الصورة؟', listenPrompt: 'استمع ثم اختر الكلمة المطابقة.',
       pictureClue: 'صورة للتلميح', mediaHint: 'أضف صورة وتسجيل نطق لكل كلمة. تُنسخ الصور بصيغة WebP صغيرة، وتبقى ملفاتك الأصلية في مكانها.',
-      saveBeforeExport: 'احفظ الدرس قبل التصدير لتضمين الكلمات والمرفقات الجديدة.'
+      saveBeforeExport: 'احفظ الدرس قبل التصدير لتضمين الكلمات والمرفقات الجديدة.',
+      letterTiles: 'ترتيب الحروف', missingLettersGame: 'الحروف الناقصة', listenType: 'استمع واكتب',
+      needSpellingWords: 'أضف كلمات مفردة ومختلفة من ثلاثة أحرف على الأقل (أربعة لنشاط الحروف الناقصة) بلغة الإجابة.',
+      needGraphemeSupport: 'لا يستطيع هذا المتصفح تقسيم الحروف بأمان لهذا النشاط. استخدم متصفحًا حديثًا.',
+      needRecordedAnswers: 'أضف تسجيلًا بلغة الإجابة لكلمة مختلفة واحدة على الأقل.',
+      listenTypePrompt: 'استمع ثم اكتب ما تسمعه.', missingLetters: 'الحروف الناقصة بالترتيب', spellWhatYouHear: 'الكلمة التي سمعتها',
+      wordPattern: 'الكلمة مع الفراغات: {pattern}', assembledWord: 'الكلمة التي ركّبتها', selectTiles: 'اختر الحروف من الأسفل',
+      removeTile: 'إزالة {letter}', availableTiles: 'الحروف المتاحة', addTile: 'إضافة {letter}', clearTiles: 'امسح',
+      trySpellingAgain: 'ليست صحيحة بعد. حاول مرة أخرى.'
     },
     de: {
       skip: 'Zum Inhalt springen', interfaceLanguage: 'Sprache der Oberfläche', yourCollection: 'Deine Sammlung', lessons: 'Lektionen', newLesson: 'Neue Lektion',
@@ -171,7 +195,15 @@
       needAudio: 'Füge vier verschiedene Aufnahmen in der vorderen Sprache und passende Wörter hinzu.', pictureChoice: 'Bildauswahl',
       listenChoose: 'Hören und wählen', picturePrompt: 'Welches Wort passt zum Bild?', listenPrompt: 'Höre zu und wähle das passende Wort.',
       pictureClue: 'Bildhinweis', mediaHint: 'Füge jedem Wort Bilder und Aussprache hinzu. Bilder werden als kompaktes WebP kopiert; Originale bleiben erhalten.',
-      saveBeforeExport: 'Speichere die Lektion vor dem Export, damit neue Wörter und Anhänge enthalten sind.'
+      saveBeforeExport: 'Speichere die Lektion vor dem Export, damit neue Wörter und Anhänge enthalten sind.',
+      letterTiles: 'Buchstaben ordnen', missingLettersGame: 'Fehlende Buchstaben', listenType: 'Hören und tippen',
+      needSpellingWords: 'Füge verschiedene einzelne Wörter mit mindestens drei Buchstaben hinzu (vier für fehlende Buchstaben) in der Antwortsprache.',
+      needGraphemeSupport: 'Dieser Browser kann Buchstaben für dieses Spiel nicht sicher trennen. Nutze einen aktuellen Browser.',
+      needRecordedAnswers: 'Füge für mindestens ein eindeutiges Wort eine Aufnahme in der Antwortsprache hinzu.',
+      listenTypePrompt: 'Höre zu und schreibe, was du hörst.', missingLetters: 'Fehlende Buchstaben in Reihenfolge', spellWhatYouHear: 'Gehörtes Wort',
+      wordPattern: 'Wort mit Lücken: {pattern}', assembledWord: 'Dein zusammengesetztes Wort', selectTiles: 'Wähle unten Buchstaben aus',
+      removeTile: '{letter} entfernen', availableTiles: 'Verfügbare Buchstaben', addTile: '{letter} hinzufügen', clearTiles: 'Leeren',
+      trySpellingAgain: 'Noch nicht richtig. Versuche es noch einmal.'
     }
   };
   root.WordsI18n = { strings, languageNames: { en: 'english', pl: 'polish', ar: 'arabic', de: 'german' } };

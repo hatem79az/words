@@ -405,7 +405,16 @@
     const mode = byId('game-mode').value;
     byId('activity-readiness').textContent = counts[mode]
       ? t('readyItems', { count: counts[mode] })
-      : t(mode === 'picture' ? 'needPictures' : mode === 'listening' ? 'needAudio' : mode === 'quiz' || mode === 'matching' ? 'needFour' : 'noCards');
+      : t(unavailableReason(mode));
+  }
+
+  function unavailableReason(mode) {
+    if (mode === 'picture') return 'needPictures';
+    if (mode === 'listening') return 'needAudio';
+    if (mode === 'listenType') return 'needRecordedAnswers';
+    if (mode === 'tiles' || mode === 'missing') return games.hasGraphemeSupport() ? 'needSpellingWords' : 'needGraphemeSupport';
+    if (mode === 'quiz' || mode === 'matching') return 'needFour';
+    return 'noCards';
   }
 
   function setTerm(element, text, language) {
@@ -417,14 +426,16 @@
   function startChallenge(lesson, mode, front, back) {
     const items = mode === 'picture' || mode === 'listening'
       ? games.mediaPairs(lesson, collection.assets, front, back, mode)
+      : mode === 'listenType' ? games.listeningTypingPairs(lesson, collection.assets, front, back)
+      : mode === 'tiles' || mode === 'missing' ? games.spellingPairs(lesson, front, back, mode)
       : games.eligiblePairs(lesson, front, back, true);
     if (['quiz', 'matching', 'picture', 'listening'].includes(mode) && items.length < 4) {
       byId('practice-message').textContent = t(mode === 'picture' ? 'needPictures' : mode === 'listening' ? 'needAudio' : 'needFour'); return;
     }
-    if (!items.length) { byId('practice-message').textContent = t('noCards'); return; }
+    if (!items.length) { byId('practice-message').textContent = t(unavailableReason(mode)); return; }
     challenge = { mode, front, back, items: games.shuffle(items), index: 0, score: 0, locked: false,
       rounds: mode === 'matching' ? games.matchingRounds(items) : [], roundIndex: 0,
-      matched: new Set(), selectedFront: null, selectedBack: null, attempts: 0 };
+      matched: new Set(), selectedFront: null, selectedBack: null, attempts: 0, attemptsThisItem: 0 };
     byId('challenge-area').hidden = false;
     renderChallenge();
   }
@@ -441,22 +452,26 @@
     if (!challenge) return;
     const state = challenge;
     state.locked = false;
+    state.attemptsThisItem = 0;
     const options = byId('challenge-options');
     options.replaceChildren(); options.className = 'challenge-options';
     byId('challenge-feedback').textContent = '';
     byId('challenge-feedback').className = 'challenge-feedback';
     byId('challenge-next').hidden = true;
     byId('challenge-media').replaceChildren();
-    byId('typing-form').hidden = state.mode !== 'typing';
+    byId('typing-form').hidden = !['typing', 'missing', 'listenType'].includes(state.mode);
+    const answerLabel = byId('typing-form').querySelector('label');
+    answerLabel.dataset.i18n = state.mode === 'missing' ? 'missingLetters' : state.mode === 'listenType' ? 'spellWhatYouHear' : 'yourAnswer';
+    answerLabel.textContent = t(answerLabel.dataset.i18n);
     byId('challenge-score').textContent = t('score', { score: state.score });
     if (state.mode === 'matching') { renderMatching(); return; }
     byId('challenge-progress').textContent = t('cardCount', { current: state.index + 1, total: state.items.length });
     byId('challenge-meter').max = state.items.length;
     byId('challenge-meter').value = state.index + 1;
     const item = state.items[state.index];
-    if (state.mode === 'picture' || state.mode === 'listening') {
+    if (state.mode === 'picture' || state.mode === 'listening' || state.mode === 'listenType') {
       const prompt = byId('challenge-prompt');
-      prompt.textContent = t(state.mode === 'picture' ? 'picturePrompt' : 'listenPrompt');
+      prompt.textContent = t(state.mode === 'picture' ? 'picturePrompt' : state.mode === 'listening' ? 'listenPrompt' : 'listenTypePrompt');
       prompt.removeAttribute('lang'); prompt.removeAttribute('dir');
       if (state.mode === 'picture') {
         const image = document.createElement('img'); image.className = 'question-picture';
@@ -465,7 +480,8 @@
       } else {
         const play = document.createElement('button'); play.type = 'button'; play.className = 'listen-button';
         play.textContent = `▶ ${t('playAudio')}`;
-        play.addEventListener('click', () => media.play(assetFor(item.media.audio[state.front]), () => message('audioPlaybackFailed')));
+        const recordingLanguage = state.mode === 'listenType' ? state.back : state.front;
+        play.addEventListener('click', () => media.play(assetFor(item.media.audio[recordingLanguage]), () => message('audioPlaybackFailed')));
         byId('challenge-media').append(play);
       }
     } else setTerm(byId('challenge-prompt'), item.terms[state.front], state.front);
@@ -476,12 +492,119 @@
         button.addEventListener('click', () => answerQuiz(button, item));
         options.append(button);
       }
+    } else if (state.mode === 'tiles') {
+      const clusters = games.spellingClusters(item.terms[state.back], state.back);
+      state.tileOrder = games.tileOrder(clusters);
+      state.tileSelection = [];
+      options.classList.add('tile-options');
+      renderTiles();
     } else {
+      if (state.mode === 'missing') {
+        state.missing = games.missingPlan(games.spellingClusters(item.terms[state.back], state.back));
+        const pattern = document.createElement('div'); pattern.className = 'spelling-pattern';
+        setTerm(pattern, state.missing.pattern, state.back);
+        pattern.setAttribute('role', 'img');
+        pattern.setAttribute('aria-label', t('wordPattern', { pattern: state.missing.pattern }));
+        options.append(pattern);
+      }
       const input = byId('typing-answer');
       input.value = ''; input.disabled = false; input.lang = state.back;
       input.dir = state.back === 'ar' ? 'rtl' : 'ltr';
-      input.focus();
+      input.spellcheck = false;
+      if (state.mode === 'listenType') byId('challenge-media').querySelector('button').focus();
+      else input.focus();
     }
+  }
+
+  function renderTiles(focusTile = null) {
+    const state = challenge;
+    if (!state || state.mode !== 'tiles') return;
+    const options = byId('challenge-options');
+    options.replaceChildren();
+    const selected = new Set(state.tileSelection);
+    const assembly = document.createElement('div');
+    assembly.className = 'tile-assembly'; assembly.lang = state.back;
+    assembly.dir = state.back === 'ar' ? 'rtl' : 'ltr';
+    assembly.setAttribute('role', 'group'); assembly.setAttribute('aria-label', t('assembledWord'));
+    assembly.setAttribute('aria-live', 'polite');
+    if (!selected.size) {
+      const hint = document.createElement('span'); hint.className = 'tile-hint'; hint.textContent = t('selectTiles');
+      assembly.append(hint);
+    }
+    for (const id of state.tileSelection) {
+      const tile = state.tileOrder.find(entry => entry.id === id);
+      const button = document.createElement('button'); button.type = 'button'; button.className = 'letter-tile placed';
+      setTerm(button, tile.letter, state.back);
+      button.setAttribute('aria-label', t('removeTile', { letter: tile.letter }));
+      button.disabled = state.locked;
+      button.addEventListener('click', () => {
+        state.tileSelection = state.tileSelection.filter(value => value !== id);
+        clearSpellingFeedback(); renderTiles(id);
+      });
+      assembly.append(button);
+    }
+    const tray = document.createElement('div'); tray.className = 'tile-tray';
+    tray.lang = state.back; tray.dir = state.back === 'ar' ? 'rtl' : 'ltr';
+    tray.setAttribute('role', 'group'); tray.setAttribute('aria-label', t('availableTiles'));
+    for (const tile of state.tileOrder) {
+      const button = document.createElement('button'); button.type = 'button'; button.className = 'letter-tile';
+      button.dataset.tileId = String(tile.id);
+      setTerm(button, tile.letter, state.back);
+      button.setAttribute('aria-label', t('addTile', { letter: tile.letter }));
+      button.disabled = state.locked || selected.has(tile.id);
+      button.addEventListener('click', () => {
+        state.tileSelection.push(tile.id);
+        clearSpellingFeedback(); renderTiles(state.tileSelection.length === state.tileOrder.length ? 'check' : null);
+      });
+      tray.append(button);
+    }
+    const controls = document.createElement('div'); controls.className = 'tile-controls';
+    const clear = document.createElement('button'); clear.type = 'button'; clear.className = 'button button-secondary';
+    clear.textContent = t('clearTiles'); clear.disabled = state.locked || !selected.size;
+    clear.addEventListener('click', () => { state.tileSelection = []; clearSpellingFeedback(); renderTiles(); });
+    const check = document.createElement('button'); check.type = 'button'; check.className = 'button button-primary';
+    check.dataset.tileCheck = ''; check.textContent = t('check');
+    check.disabled = state.locked || selected.size !== state.tileOrder.length;
+    check.addEventListener('click', () => {
+      const answer = state.tileSelection.map(id => state.tileOrder.find(tile => tile.id === id).letter).join('');
+      evaluateSpelling(answer, check, state.items[state.index].terms[state.back]);
+    });
+    controls.append(clear, check); options.append(assembly, tray, controls);
+    const focus = focusTile === 'check' ? check
+      : focusTile === null ? tray.querySelector('button:not(:disabled)')
+      : [...tray.querySelectorAll('button')].find(button => button.dataset.tileId === String(focusTile));
+    if (focus && !focus.disabled) focus.focus();
+  }
+
+  function clearSpellingFeedback() {
+    byId('challenge-feedback').textContent = '';
+    byId('challenge-feedback').className = 'challenge-feedback';
+  }
+
+  function retrySpelling(element) {
+    const output = byId('challenge-feedback');
+    output.className = 'challenge-feedback negative';
+    output.textContent = t('trySpellingAgain');
+    effects.animate(element, 'wrong'); effects.play('wrong');
+  }
+
+  function evaluateSpelling(answer, element, expected) {
+    const state = challenge;
+    if (!state || state.locked) return;
+    const correct = games.sameAnswer(answer, expected, state.back);
+    if (!correct && ++state.attemptsThisItem < 2) {
+      retrySpelling(element);
+      if (element === byId('typing-answer')) { element.focus(); element.select(); }
+      return;
+    }
+    state.locked = true;
+    if (correct) state.score += 1;
+    if (state.mode === 'listenType') media.stop();
+    if (state.mode === 'tiles') {
+      for (const button of byId('challenge-options').querySelectorAll('button')) button.disabled = true;
+    } else byId('typing-answer').disabled = true;
+    feedback(correct, element, state.items[state.index].terms[state.back]);
+    prepareNext();
   }
 
   function answerQuiz(button, item) {
@@ -502,16 +625,11 @@
   function answerTyping(event) {
     event.preventDefault();
     const state = challenge;
-    if (!state || state.mode !== 'typing' || state.locked) return;
+    if (!state || !['typing', 'missing', 'listenType'].includes(state.mode) || state.locked) return;
     const input = byId('typing-answer');
     if (!input.value.trim()) { byId('challenge-feedback').textContent = t('enterAnswer'); return; }
-    state.locked = true;
-    const expected = state.items[state.index].terms[state.back];
-    const correct = games.sameAnswer(input.value, expected, state.back);
-    if (correct) state.score += 1;
-    input.disabled = true;
-    feedback(correct, input, expected);
-    prepareNext();
+    const expected = state.mode === 'missing' ? state.missing.answer : state.items[state.index].terms[state.back];
+    evaluateSpelling(input.value, input, expected);
   }
 
   function feedback(correct, element, expected) {

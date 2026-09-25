@@ -41,12 +41,13 @@ The release target includes these modes. A language pair means a prompt language
 | Context | Sentence order | Rebuild a short sentence from word chunks. | Teacher-entered example and approved chunk order. |
 | Context | Complete the sentence | Choose or type a missing word in context. | Teacher-entered sentence with a validated gap and answer. |
 
-These 18 modes are the complete phase 1 release list. Timed rounds, a random wheel, and a gameshow look can be optional presentation settings, not separate learning mechanics. The current build includes flashcards, multiple choice, match pairs, typed spelling, picture choice, and listen and choose. The other 12 rows remain planned work.
+These 18 modes are the complete phase 1 release list. Timed rounds, a random wheel, and a gameshow look can be optional presentation settings, not separate learning mechanics. The current build includes flashcards, multiple choice, match pairs, typed spelling, picture choice, listen and choose, letter tiles, missing letters, and listen and type. The other nine rows remain planned work.
 
 ### Language-specific answer rules
 
 - Preserve Polish diacritics, German umlauts and ß, and Arabic letters. Use Unicode NFC normalization and case folding appropriate to the target language; do not silently remove accents or Arabic marks. A teacher may add accepted alternatives later.
 - Letter games split text into **grapheme clusters**, not JavaScript string positions, so combining marks stay with their base character. The teacher can disable a spelling mode for an unsuitable word or script.
+- The current letter tiles and missing letters accept distinct single words of suitable length. They use [Intl.Segmenter](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Segmenter) for grapheme splitting; if it is unavailable, the game explains why it cannot run instead of breaking letters apart. Listen-and-type uses a recording in the answer language and requires an explicit Play action.
 - Avoid distractors with the same meaning or identical written answer. Do not turn a reading or listening comprehension task into a mere translation prompt when richer context is available.
 - Scores are game attempts, kept apart from lesson source content. Wrong answers lead to a retry or review opportunity.
 
@@ -72,7 +73,7 @@ Technical references: [Web Animations API](https://developer.mozilla.org/en-US/d
 | --- | --- | --- |
 | 1. Shared text games | Game eligibility, chooser, multiple choice, match pairs, typed spelling, feedback effects. | The same edited lesson drives four working modes; small lessons and ambiguous pairs are handled visibly. |
 | 2. Portable media | Image/audio authoring, self-contained JSON import/export, picture choice, listen and choose. | Code is present; Windows browser transfer and offline play remain an open acceptance gate. |
-| 3a. First spelling games | Tiles, missing letters, listen and type. | Unicode and RTL cases work; each mode has a meaningful clue and keyboard feedback. |
+| 3a. First spelling games | Tiles, missing letters, listen and type. | Code and local Unicode checks are present; Windows browser interaction and RTL visual acceptance remain open. |
 | 3b. More spelling | Letter guess, word search, crossword. | Generators create readable, solvable rounds for supported scripts and skip unsuitable terms. |
 | 4. More practice | Memory, true/false, categories, sentence order, sentence completion, picture labels. | Games use shared data and clearly state their data requirements. |
 | 5. Quality and progress | Learner progress, retries, backups, accessibility, visual/audio polish, complete browser acceptance pass. | All listed activities work offline on Windows in the browser with keyboard support and reduced motion. |
