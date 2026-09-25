@@ -1,24 +1,28 @@
 # Next job
 
-This file is the handoff point for the next coding session. **Every pull request that changes the app must update this file before it is merged.** Move the finished work to the short completed list, put the next unfinished deliverable at the top, and update its acceptance checks. The full scope lives in [docs/BUILD_PLAN.md](docs/BUILD_PLAN.md).
+This file is the handoff point for the next coding session. **Every pull request that changes the app must update this file before it is merged.** Move finished work to the short completed list, place the next unfinished deliverable at the top, and update its acceptance checks. The full scope lives in [docs/BUILD_PLAN.md](docs/BUILD_PLAN.md).
 
-## Next deliverable: portable images and pronunciation audio
+## Next deliverable: first Unicode spelling games
 
-Build a managed media library for the browser phase, with an explicit export/import format that includes images and recordings. Keep lessons independent of absolute file paths. Add image and audio fields to the lesson editor, previews, playback controls, and a migration path from schema version 1. Then make picture choice and listen-and-choose playable when the lesson has suitable media.
+Build letter tiles, missing letters, and listen-and-type from the shared lesson data. Split tiles into Unicode grapheme clusters so Polish accents, German umlauts and ß, and Arabic script stay intact. Skip unsuitable terms with visible guidance. These are the first three of the six remaining spelling modes in [the full 18-activity inventory](docs/BUILD_PLAN.md).
 
 Acceptance checks:
 
-1. A lesson with words in two languages, local images, and optional per-language audio can be saved, exported, imported on another computer, and played with no internet connection.
-2. A missing or unsupported file produces a useful error without losing lesson text. Replacing an image or audio file does not delete the original source file.
-3. Old version 1 JSON lessons import successfully. New exports contain the media bytes or a documented self-contained package; no absolute source path is required to play.
-4. Picture choice and listen-and-choose explain when there are too few usable items. Audio playback is controlled by the learner; it never starts unexpectedly.
-5. Run the model tests and manually exercise the export/import flow in a browser, including Arabic and Polish text.
+1. All three modes use the saved lesson, explain when clues are insufficient, and work from a keyboard.
+2. Combining characters and Arabic letters remain intact; accents remain significant when checking a typed answer.
+3. Listen-and-type starts recordings only after the learner presses Play and handles unsupported audio clearly.
+4. Update this file before merging the spelling PR. Keep the browser acceptance item below open until it is exercised on Windows.
 
-## Completed
+## Open browser acceptance gate
+
+On the intended Windows browser, attach pictures and recordings, save, close/reopen, export, import on another browser/computer, and play with the network disconnected. Confirm the JSON contains WebP and audio bytes rather than source paths. Review desktop and narrow widths, keyboard focus, Arabic RTL, and reduced motion visually and fix any defects found. The cloud browser blocked the local `file://` app, so code review and local checks do not close this gate.
+
+## Completed in code
 
 - Initial offline HTML/CSS/JavaScript starter: named lessons, four languages, JSON backup, flashcards.
 - Activity roadmap and shared text-game foundation: multiple choice, matching pairs, typed spelling, restrained feedback motion and sound, mute control.
+- Version 2 portable media: WebP conversion, per-language audio, IndexedDB working copy, self-contained JSON, old export migration, picture choice, and listen and choose. Ambiguous duplicate media clues are excluded. The layout, focus path, responsive game screens, progress bars, reduced-motion behavior, and synthesized feedback cues received a code-level polish pass. Windows browser acceptance remains open above.
 
 ## After this job
 
-Finish the remaining activities in the order in the build plan, improve lesson authoring and progress, and test the complete browser app. **Windows packaging is phase 2 only.**
+Finish letter guess, word search, crossword, and the other activities in the build plan; then learner progress and the complete browser acceptance pass. **One-click Windows packaging is phase 2 only.**

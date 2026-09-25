@@ -37,10 +37,34 @@ test('duplicating a lesson gives independent lesson and item identifiers', () =>
 
 test('invalid imports are rejected before they replace existing lessons', () => {
   const valid = model.saveLesson(model.newCollection(), lesson());
-  assert.throws(() => model.validateCollection({ ...valid, schemaVersion: 2 }), /invalidCollection/);
+  assert.throws(() => model.validateCollection({ ...valid, schemaVersion: 99 }), /invalidCollection/);
   assert.throws(() => model.validateCollection({ ...valid, lessons: [valid.lessons[0], valid.lessons[0]] }), /duplicateId/);
   const incomplete = structuredClone(valid);
   incomplete.lessons[0].items[0].terms = { en: 'cat', pl: '', ar: '', de: '' };
   assert.throws(() => model.validateCollection(incomplete), /twoLanguages/);
   assert.equal(valid.lessons[0].items[0].terms.pl, 'kot');
+});
+
+test('old text-only exports migrate to version 2 without losing terms', () => {
+  const oldLesson = lesson();
+  oldLesson.items.forEach(item => { item.media = { image: null, audio: null }; });
+  const upgraded = model.validateCollection({ schemaVersion: 1, lessons: [oldLesson] });
+  assert.equal(upgraded.schemaVersion, 2);
+  assert.deepEqual(upgraded.assets, {});
+  assert.equal(upgraded.lessons[0].items[0].terms.ar, 'قطة');
+  assert.deepEqual(upgraded.lessons[0].items[0].media.audio, {});
+});
+
+test('portable image and audio survive export, while missing references are rejected', () => {
+  const value = lesson();
+  value.items[0].media = { image: 'photo', audio: { pl: 'voice' } };
+  const assets = {
+    photo: { mime: 'image/webp', data: 'data:image/webp;base64,UklGRg==' },
+    voice: { mime: 'audio/mpeg', data: 'data:audio/mpeg;base64,SUQz' },
+    unused: { mime: 'audio/mpeg', data: 'data:audio/mpeg;base64,SUQz' }
+  };
+  const saved = model.saveLesson(model.newCollection(), value, assets);
+  assert.deepEqual(Object.keys(saved.assets).sort(), ['photo', 'voice']);
+  assert.deepEqual(model.validateCollection(JSON.parse(JSON.stringify(saved))), saved);
+  assert.throws(() => model.validateCollection({ ...saved, assets: { photo: assets.photo } }), /missingMedia/);
 });

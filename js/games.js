@@ -42,6 +42,19 @@
     return shuffle([question, ...distractors], random);
   }
 
+  function mediaPairs(lesson, assets, front, back, mode) {
+    const clueFor = item => assets[mode === 'picture' ? item.media.image : item.media.audio[front]]?.data;
+    const pairs = eligiblePairs(lesson, front, back, true).filter(item => {
+      return Boolean(clueFor(item));
+    });
+    const clues = new Map();
+    for (const item of pairs) {
+      const clue = clueFor(item);
+      clues.set(clue, (clues.get(clue) || 0) + 1);
+    }
+    return pairs.filter(item => clues.get(clueFor(item)) === 1);
+  }
+
   function matchingRounds(items, random = Math.random) {
     if (items.length < 4) throw new Error('needFour');
     const pool = shuffle(items, random);
@@ -56,16 +69,20 @@
     return rounds;
   }
 
-  function readiness(lesson, front, back) {
+  function readiness(lesson, front, back, assets = {}) {
     const cards = eligiblePairs(lesson, front, back, false);
     const distinct = eligiblePairs(lesson, front, back, true);
+    const pictures = mediaPairs(lesson, assets, front, back, 'picture').length;
+    const listening = mediaPairs(lesson, assets, front, back, 'listening').length;
     return {
       flashcards: cards.length,
       quiz: distinct.length >= 4 ? distinct.length : 0,
       matching: distinct.length >= 4 ? distinct.length : 0,
-      typing: distinct.length
+      typing: distinct.length,
+      picture: pictures >= 4 ? pictures : 0,
+      listening: listening >= 4 ? listening : 0
     };
   }
 
-  return { answerKey, sameAnswer, eligiblePairs, shuffle, quizChoices, matchingRounds, readiness };
+  return { answerKey, sameAnswer, eligiblePairs, mediaPairs, shuffle, quizChoices, matchingRounds, readiness };
 });
