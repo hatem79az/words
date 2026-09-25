@@ -30,7 +30,19 @@
       roundCount: 'Round {current} of {total}', matchedCount: 'Matched {count} of {total}',
       matchInstruction: 'Choose one word in each column to make a pair.', tryAnother: 'Try another pair.',
       nextRound: 'Next round', seeResults: 'See results', roundComplete: 'Round complete!',
-      matchResults: 'You matched every pair in {attempts} attempts.', finalScore: 'You got {score} of {total} correct.'
+      matchResults: 'You matched every pair in {attempts} attempts.', finalScore: 'You got {score} of {total} correct.',
+      mediaAttachments: 'Picture and pronunciation', addPicture: 'Choose a picture (WebP, PNG, JPG)', imagePreview: 'Picture preview',
+      removePicture: 'Remove picture', noPicture: 'No picture yet', addPronunciation: 'Add pronunciation audio', audioLanguage: 'Recording language',
+      playAudio: 'Play recording', playFront: 'Play front', playBack: 'Play answer', imageAdded: 'Picture added. Save the lesson to keep it.',
+      audioAdded: 'Recording added. Save the lesson to keep it.', unsupportedImage: 'Choose a WebP, PNG, or JPG picture.',
+      unsupportedAudio: 'Choose playable MP3, WAV, OGG, WebM, or M4A audio.', imageTooLarge: 'This picture is too large. Choose a smaller file.',
+      audioTooLarge: 'Recording exceeds 4 MB. Choose a shorter or compressed file.', mediaReadFailed: 'This file could not be opened.',
+      audioPlaybackFailed: 'This recording could not be played in this browser.', missingMedia: 'The lesson refers to missing media.',
+      mediaBusy: 'Wait for the attachment to finish loading, then save.', needPictures: 'Add four distinct pictures and words for this activity.',
+      needAudio: 'Add four distinct recordings in the front language and matching words.', pictureChoice: 'Picture choice',
+      listenChoose: 'Listen and choose', picturePrompt: 'Which word matches the picture?', listenPrompt: 'Listen, then choose the matching word.',
+      pictureClue: 'Picture clue', mediaHint: 'Add pictures and pronunciation inside each word. Images are copied as compact WebP; your originals stay in place.',
+      saveBeforeExport: 'Save your lesson before exporting so the new words and attachments are included.'
     },
     pl: {
       skip: 'Przejdź do treści', interfaceLanguage: 'Język interfejsu', yourCollection: 'Twoja kolekcja', lessons: 'Lekcje', newLesson: 'Nowa lekcja',
@@ -61,7 +73,19 @@
       roundCount: 'Runda {current} z {total}', matchedCount: 'Dopasowano {count} z {total}',
       matchInstruction: 'Wybierz po jednym słowie z każdej kolumny, aby utworzyć parę.', tryAnother: 'Spróbuj innej pary.',
       nextRound: 'Następna runda', seeResults: 'Pokaż wynik', roundComplete: 'Koniec rundy!',
-      matchResults: 'Dopasowano wszystkie pary w {attempts} próbach.', finalScore: 'Poprawne odpowiedzi: {score} z {total}.'
+      matchResults: 'Dopasowano wszystkie pary w {attempts} próbach.', finalScore: 'Poprawne odpowiedzi: {score} z {total}.',
+      mediaAttachments: 'Obraz i wymowa', addPicture: 'Wybierz obraz (WebP, PNG, JPG)', imagePreview: 'Podgląd obrazu',
+      removePicture: 'Usuń obraz', noPicture: 'Brak obrazu', addPronunciation: 'Dodaj nagranie wymowy', audioLanguage: 'Język nagrania',
+      playAudio: 'Odtwórz nagranie', playFront: 'Odtwórz przód', playBack: 'Odtwórz odpowiedź', imageAdded: 'Dodano obraz. Zapisz lekcję.',
+      audioAdded: 'Dodano nagranie. Zapisz lekcję.', unsupportedImage: 'Wybierz obraz WebP, PNG lub JPG.',
+      unsupportedAudio: 'Wybierz odtwarzalny plik MP3, WAV, OGG, WebM lub M4A.', imageTooLarge: 'Ten obraz jest za duży. Wybierz mniejszy plik.',
+      audioTooLarge: 'Nagranie przekracza 4 MB. Wybierz krótszy lub skompresowany plik.', mediaReadFailed: 'Nie udało się otworzyć pliku.',
+      audioPlaybackFailed: 'Nie można odtworzyć nagrania w tej przeglądarce.', missingMedia: 'W lekcji brakuje pliku multimedialnego.',
+      mediaBusy: 'Poczekaj na dodanie pliku, a potem zapisz lekcję.', needPictures: 'Dodaj cztery różne obrazy i słowa.',
+      needAudio: 'Dodaj cztery różne nagrania w języku z przodu karty i pasujące słowa.', pictureChoice: 'Wybór obrazu',
+      listenChoose: 'Słuchaj i wybierz', picturePrompt: 'Które słowo pasuje do obrazu?', listenPrompt: 'Posłuchaj i wybierz pasujące słowo.',
+      pictureClue: 'Wskazówka obrazkowa', mediaHint: 'Dodaj obrazy i wymowę do każdego słowa. Obrazy są kopiowane jako małe pliki WebP; oryginały pozostają na miejscu.',
+      saveBeforeExport: 'Zapisz lekcję przed eksportem, aby dołączyć nowe słowa i pliki.'
     },
     ar: {
       skip: 'انتقل إلى المحتوى', interfaceLanguage: 'لغة الواجهة', yourCollection: 'مجموعتك', lessons: 'الدروس', newLesson: 'درس جديد',
@@ -92,7 +116,19 @@
       roundCount: 'الجولة {current} من {total}', matchedCount: 'تم وصل {count} من {total}',
       matchInstruction: 'اختر كلمة من كل عمود لتكوين زوج.', tryAnother: 'جرّب زوجًا آخر.',
       nextRound: 'الجولة التالية', seeResults: 'عرض النتائج', roundComplete: 'انتهت الجولة!',
-      matchResults: 'وصلت جميع الأزواج خلال {attempts} محاولة.', finalScore: 'أجبت إجابة صحيحة عن {score} من {total}.'
+      matchResults: 'وصلت جميع الأزواج خلال {attempts} محاولة.', finalScore: 'أجبت إجابة صحيحة عن {score} من {total}.',
+      mediaAttachments: 'الصورة والنطق', addPicture: 'اختر صورة (WebP أو PNG أو JPG)', imagePreview: 'معاينة الصورة',
+      removePicture: 'إزالة الصورة', noPicture: 'لا توجد صورة', addPronunciation: 'أضف تسجيلًا للنطق', audioLanguage: 'لغة التسجيل',
+      playAudio: 'تشغيل التسجيل', playFront: 'تشغيل الوجه الأمامي', playBack: 'تشغيل الإجابة', imageAdded: 'أُضيفت الصورة. احفظ الدرس للاحتفاظ بها.',
+      audioAdded: 'أُضيف التسجيل. احفظ الدرس للاحتفاظ به.', unsupportedImage: 'اختر صورة WebP أو PNG أو JPG.',
+      unsupportedAudio: 'اختر صوتًا قابلًا للتشغيل بصيغة MP3 أو WAV أو OGG أو WebM أو M4A.', imageTooLarge: 'هذه الصورة كبيرة جدًا. اختر ملفًا أصغر.',
+      audioTooLarge: 'يتجاوز التسجيل ٤ ميغابايت. اختر ملفًا أقصر أو مضغوطًا.', mediaReadFailed: 'تعذّر فتح هذا الملف.',
+      audioPlaybackFailed: 'تعذّر تشغيل التسجيل في هذا المتصفح.', missingMedia: 'يشير الدرس إلى ملف وسائط مفقود.',
+      mediaBusy: 'انتظر حتى ينتهي تحميل المرفق ثم احفظ الدرس.', needPictures: 'أضف أربع صور وكلمات مختلفة لهذا النشاط.',
+      needAudio: 'أضف أربعة تسجيلات مختلفة بلغة الوجه الأمامي وكلمات مطابقة.', pictureChoice: 'اختر الكلمة للصورة',
+      listenChoose: 'استمع واختر', picturePrompt: 'أي كلمة تناسب الصورة؟', listenPrompt: 'استمع ثم اختر الكلمة المطابقة.',
+      pictureClue: 'صورة للتلميح', mediaHint: 'أضف صورة وتسجيل نطق لكل كلمة. تُنسخ الصور بصيغة WebP صغيرة، وتبقى ملفاتك الأصلية في مكانها.',
+      saveBeforeExport: 'احفظ الدرس قبل التصدير لتضمين الكلمات والمرفقات الجديدة.'
     },
     de: {
       skip: 'Zum Inhalt springen', interfaceLanguage: 'Sprache der Oberfläche', yourCollection: 'Deine Sammlung', lessons: 'Lektionen', newLesson: 'Neue Lektion',
@@ -123,7 +159,19 @@
       roundCount: 'Runde {current} von {total}', matchedCount: '{count} von {total} zugeordnet',
       matchInstruction: 'Wähle ein Wort aus jeder Spalte, um ein Paar zu bilden.', tryAnother: 'Versuche ein anderes Paar.',
       nextRound: 'Nächste Runde', seeResults: 'Ergebnis ansehen', roundComplete: 'Runde beendet!',
-      matchResults: 'Alle Paare in {attempts} Versuchen zugeordnet.', finalScore: '{score} von {total} richtig.'
+      matchResults: 'Alle Paare in {attempts} Versuchen zugeordnet.', finalScore: '{score} von {total} richtig.',
+      mediaAttachments: 'Bild und Aussprache', addPicture: 'Bild auswählen (WebP, PNG, JPG)', imagePreview: 'Bildvorschau',
+      removePicture: 'Bild entfernen', noPicture: 'Noch kein Bild', addPronunciation: 'Ausspracheaufnahme hinzufügen', audioLanguage: 'Sprache der Aufnahme',
+      playAudio: 'Aufnahme abspielen', playFront: 'Vorderseite abspielen', playBack: 'Antwort abspielen', imageAdded: 'Bild hinzugefügt. Speichere die Lektion.',
+      audioAdded: 'Aufnahme hinzugefügt. Speichere die Lektion.', unsupportedImage: 'Wähle ein WebP-, PNG- oder JPG-Bild.',
+      unsupportedAudio: 'Wähle abspielbares MP3-, WAV-, OGG-, WebM- oder M4A-Audio.', imageTooLarge: 'Dieses Bild ist zu groß. Wähle eine kleinere Datei.',
+      audioTooLarge: 'Die Aufnahme überschreitet 4 MB. Wähle eine kürzere oder komprimierte Datei.', mediaReadFailed: 'Diese Datei konnte nicht geöffnet werden.',
+      audioPlaybackFailed: 'Diese Aufnahme konnte in diesem Browser nicht abgespielt werden.', missingMedia: 'In der Lektion fehlt eine Mediendatei.',
+      mediaBusy: 'Warte, bis der Anhang geladen ist, und speichere dann.', needPictures: 'Füge vier verschiedene Bilder und Wörter hinzu.',
+      needAudio: 'Füge vier verschiedene Aufnahmen in der vorderen Sprache und passende Wörter hinzu.', pictureChoice: 'Bildauswahl',
+      listenChoose: 'Hören und wählen', picturePrompt: 'Welches Wort passt zum Bild?', listenPrompt: 'Höre zu und wähle das passende Wort.',
+      pictureClue: 'Bildhinweis', mediaHint: 'Füge jedem Wort Bilder und Aussprache hinzu. Bilder werden als kompaktes WebP kopiert; Originale bleiben erhalten.',
+      saveBeforeExport: 'Speichere die Lektion vor dem Export, damit neue Wörter und Anhänge enthalten sind.'
     }
   };
   root.WordsI18n = { strings, languageNames: { en: 'english', pl: 'polish', ar: 'arabic', de: 'german' } };

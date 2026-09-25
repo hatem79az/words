@@ -10,6 +10,8 @@
     <script src="js/i18n.js" defer></script>
     <script src="js/games.js" defer></script>
     <script src="js/effects.js" defer></script>
+    <script src="js/media.js" defer></script>
+    <script src="js/storage.js" defer></script>
     <script src="js/app.js" defer></script>
   </head>
   <body>
@@ -37,8 +39,8 @@
         <p id="empty-library" class="muted" data-i18n="emptyLibrary">Create your first lesson to begin.</p>
         <div class="library-actions">
           <button id="export-library" class="button button-secondary" type="button" data-i18n="exportLibrary">Export lessons</button>
-          <label class="button button-secondary file-button" for="import-file" data-i18n="importLibrary">Import lessons</label>
-          <input id="import-file" class="visually-hidden" type="file" accept=".json,application/json">
+          <button id="import-trigger" class="button button-secondary" type="button" data-i18n="importLibrary">Import lessons</button>
+          <input id="import-file" type="file" accept=".json,application/json" hidden>
         </div>
         <p class="storage-note" data-i18n="backupNote">Export a JSON backup to keep or move your lessons. Browser storage is only a convenience.</p>
       </aside>
@@ -64,6 +66,7 @@
             <input id="lesson-name" name="lesson-name" maxlength="120" required autocomplete="off" data-i18n-placeholder="lessonNameExample" placeholder="For example, Animals">
             <div class="section-heading"><h3 data-i18n="wordsAndPhrases">Words and phrases</h3><button id="add-item" class="button button-secondary" type="button" data-i18n="addWord">Add word</button></div>
             <p class="muted" data-i18n="entryHint">Add at least two languages for each card. Leave other language fields empty if you like.</p>
+            <p class="media-hint" data-i18n="mediaHint">Add pictures and pronunciation inside each word. Images are copied as compact WebP; your original files stay in place.</p>
             <div id="item-list" class="item-list"></div>
             <div class="form-actions"><button class="button button-primary" type="submit" data-i18n="saveLesson">Save lesson</button></div>
           </form>
@@ -82,6 +85,8 @@
               <option value="quiz" data-i18n="quiz">Multiple choice</option>
               <option value="matching" data-i18n="matching">Match pairs</option>
               <option value="typing" data-i18n="typing">Type the answer</option>
+              <option value="picture" data-i18n="pictureChoice">Picture choice</option>
+              <option value="listening" data-i18n="listenChoose">Listen and choose</option>
             </select>
             <button id="start-cards" class="button button-primary" type="button" data-i18n="start">Start</button>
           </div>
@@ -89,12 +94,15 @@
           <p id="practice-message" class="muted"></p>
           <div id="card-area" hidden>
             <p id="card-progress" class="card-progress"></p>
-            <div class="flashcard" id="flashcard" tabindex="0" aria-live="polite"><p id="card-prompt"></p><p id="card-answer" hidden></p></div>
-            <div class="card-actions"><button id="reveal-card" class="button button-secondary" type="button" data-i18n="reveal">Reveal answer</button><button id="next-card" class="button button-primary" type="button" data-i18n="next">Next card</button></div>
+            <progress id="card-meter" class="round-meter" max="1" value="0" aria-labelledby="card-progress"></progress>
+            <div class="flashcard" id="flashcard" tabindex="0" aria-live="polite"><img id="card-picture" alt="" hidden><p id="card-prompt"></p><p id="card-answer" hidden></p></div>
+            <div class="card-actions"><button id="play-card-front" class="button button-secondary" type="button" data-i18n="playFront" hidden>Play front</button><button id="reveal-card" class="button button-secondary" type="button" data-i18n="reveal">Reveal answer</button><button id="play-card-back" class="button button-secondary" type="button" data-i18n="playBack" hidden>Play answer</button><button id="next-card" class="button button-primary" type="button" data-i18n="next">Next card</button></div>
           </div>
           <div id="challenge-area" hidden>
             <div class="challenge-heading"><p id="challenge-progress" class="card-progress"></p><p id="challenge-score" class="card-progress"></p></div>
+            <progress id="challenge-meter" class="round-meter" max="1" value="0" aria-labelledby="challenge-progress"></progress>
             <p id="challenge-prompt" class="challenge-prompt"></p>
+            <div id="challenge-media" class="challenge-media"></div>
             <div id="challenge-options" class="challenge-options"></div>
             <form id="typing-form" class="typing-form" hidden>
               <label for="typing-answer" data-i18n="yourAnswer">Your answer</label>

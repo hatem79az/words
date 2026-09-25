@@ -32,13 +32,16 @@ The release target includes these modes. A language pair means a prompt language
 | Spelling | Missing letters | Complete a word with a few hidden graphemes. | A suitable word; enough visible context. |
 | Spelling | Letter guess | Guess letters with a limited mistake count and a visible clue. | A suitable word; no ambiguous clue. |
 | Spelling | Word search | Find target words in a grid. | Several short words and an eligible alphabet/script. |
+| Spelling | Crossword | Fill intersecting word clues with keyboard input. | Several suitable words with a valid generated grid. |
 | Listening | Listen and choose | Hear a recording and choose the matching word or image. | Four items with relevant recordings and distinct answers. |
 | Listening | Listen and type | Hear a recording and type the target term. | Recording and teacher-approved answer. |
 | Visual | Picture choice | Choose the term for an image. | Four distinct images and target terms. |
+| Visual | Label the picture | Place terms on teacher-marked parts of an image. | An image with at least two labelled hotspots. |
 | Sorting | Category sort | Put words into labelled groups. | Two or more categories with enough examples. |
 | Context | Sentence order | Rebuild a short sentence from word chunks. | Teacher-entered example and approved chunk order. |
+| Context | Complete the sentence | Choose or type a missing word in context. | Teacher-entered sentence with a validated gap and answer. |
 
-Timed rounds are an optional setting for several modes, not a separate activity. We will not count cosmetic reskins of the same mechanic as new games. The first shared-game milestone adds multiple choice, matching pairs, and typed spelling beside flashcards. The remaining rows are phase 1 work, not features we claim to have shipped yet.
+These 18 modes are the complete phase 1 release list. Timed rounds, a random wheel, and a gameshow look can be optional presentation settings, not separate learning mechanics. The current build includes flashcards, multiple choice, match pairs, typed spelling, picture choice, and listen and choose. The other 12 rows remain planned work.
 
 ### Language-specific answer rules
 
@@ -49,28 +52,29 @@ Timed rounds are an optional setting for several modes, not a separate activity.
 
 ## Lesson and storage model
 
-Version 1 stores one collection with lessons; each item has `terms` keyed by `en`, `pl`, `ar`, and `de`, plus reserved media slots. Next version adds stable media identifiers, optional audio per language, categories, accepted answers, and contextual examples. Migrations are explicit and tested using old exports. Source images and recordings are copied into an owned, portable package rather than referenced by absolute paths.
+Version 1 stores one collection with lessons; each item has `terms` keyed by `en`, `pl`, `ar`, and `de`, plus reserved media slots. Version 2 embeds assets in a self-contained JSON export. Item media references stable asset IDs: one WebP picture and optional recordings keyed by language. Imported PNG/JPG/WebP pictures are resized to at most 1024 pixels per side and encoded as WebP. Audio is copied as MP3, WAV, OGG, WebM, or M4A when the browser supports it. The app never edits the source files or stores absolute paths. Version 1 imports migrate to version 2 in memory. Later schema work adds categories, accepted answers, contextual examples, and picture hotspots.
 
-In phase 1, JSON import/export is the durable transfer path. Browser storage is a convenience cache because behavior on `file://` pages varies. The media milestone will define a self-contained bundle before accepting attached files. In phase 2, a Windows app will use an ordinary writable content folder and a separate per-computer progress location.
+In phase 1, JSON import/export is the durable transfer path. IndexedDB stores the working copy when available; the earlier localStorage cache is imported when present. Browser storage is a convenience because behavior on `file://` pages varies and quota can be exceeded. Save the lesson before exporting; the JSON includes media bytes. Images are limited to a 12 MB source and roughly 1.65 MB encoded WebP, recordings to 4 MB each, and the total asset data to about 24 MB. In phase 2, a Windows app will use an ordinary writable content folder and a separate per-computer progress location.
 
 ## Motion and sound direction
 
 Aim for clear, playful feedback rather than constant motion. Cards enter with a short opacity/transform transition; correct answers give a gentle lift or glow, wrong answers a brief restrained nudge, and completed rounds a small celebratory flourish. Keep most feedback under about 300 ms and make the screen usable before and after the animation. Do not use flashing, full-screen shaking, or animations that delay the next answer.
 
-Use CSS transitions/keyframes for ordinary states and the Web Animations API for short, cancellable feedback effects. Animate mainly `transform` and `opacity`. Honor `prefers-reduced-motion` and provide a static state that conveys the same result. Keep RTL layout logical and test motion in both directions.
+Use CSS transitions/keyframes for ordinary states and the Web Animations API for short, cancellable feedback effects. Animate mainly `transform` and `opacity`. Honor `prefers-reduced-motion` and provide a static state that conveys the same result. Keep RTL layout logical and test motion in both directions. Keep the browser build dependency free and fully offline; a downloaded animation library adds weight without solving the current screens. Revisit only if later game mechanics need coordinated timelines.
 
 Use quiet, distinct local sounds for correct, incorrect, and completion feedback. Start audio only after a learner action, offer a clearly visible mute setting, and persist it locally when possible. The first milestone synthesizes small cues with Web Audio so the app remains self-contained; replace or supplement them with licensed local sound assets if listening tests show they improve the experience. Pronunciation recordings are a separate learning asset and must never be confused with game feedback. No remote audio service is required.
 
-Technical references: [Web Animations API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Animations_API), [reduced motion](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/%40media/prefers-reduced-motion), and [Web Audio best practices](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Best_practices).
+Technical references: [Web Animations API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Animations_API), [reduced motion](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/%40media/prefers-reduced-motion), [Web Audio best practices](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Best_practices), and [canvas WebP export and fallback behavior](https://developer.mozilla.org/en-US/docs/Web/API/HTMLCanvasElement/toDataURL). If the browser cannot encode WebP, the editor must reject the image clearly rather than silently storing a different format.
 
 ## Work order and gates
 
 | Milestone | Deliverable | Done when |
 | --- | --- | --- |
 | 1. Shared text games | Game eligibility, chooser, multiple choice, match pairs, typed spelling, feedback effects. | The same edited lesson drives four working modes; small lessons and ambiguous pairs are handled visibly. |
-| 2. Portable media | Image/audio authoring, package import/export, picture choice, listen and choose. | Lesson moves to another computer with working media and old JSON imports. |
-| 3. More spelling | Tiles, missing letters, letter guess, word search, listen and type. | Unicode and RTL cases work; each mode has a meaningful clue and feedback. |
-| 4. More practice | Memory, true/false, categories, sentence order. | Games use shared data and clearly state their data requirements. |
+| 2. Portable media | Image/audio authoring, self-contained JSON import/export, picture choice, listen and choose. | Code is present; Windows browser transfer and offline play remain an open acceptance gate. |
+| 3a. First spelling games | Tiles, missing letters, listen and type. | Unicode and RTL cases work; each mode has a meaningful clue and keyboard feedback. |
+| 3b. More spelling | Letter guess, word search, crossword. | Generators create readable, solvable rounds for supported scripts and skip unsuitable terms. |
+| 4. More practice | Memory, true/false, categories, sentence order, sentence completion, picture labels. | Games use shared data and clearly state their data requirements. |
 | 5. Quality and progress | Learner progress, retries, backups, accessibility, visual/audio polish, complete browser acceptance pass. | All listed activities work offline on Windows in the browser with keyboard support and reduced motion. |
 | 6. Windows wrapper | App icon, local content folder, portable Windows build and second-laptop test. | Click to open; copy lessons/media; play offline; no VS Code or Node.js for the learner. |
 

@@ -52,3 +52,22 @@ test('typed spelling normalizes case and whitespace but preserves diacritics', (
   assert.equal(games.sameAnswer('STRASSE', 'Straße', 'de'), false);
   assert.equal(games.sameAnswer(' قطة ', 'قطة', 'ar'), true);
 });
+
+test('picture and listening choices require four distinct media clues', () => {
+  const value = lesson(5);
+  const assets = {};
+  for (let i = 0; i < 5; i += 1) {
+    value.items[i].media.image = `image-${i}`;
+    value.items[i].media.audio = { en: `voice-${i}` };
+    assets[`image-${i}`] = { mime: 'image/webp', data: `data:image/webp;base64,${Buffer.from(`image${i}`).toString('base64')}` };
+    assets[`voice-${i}`] = { mime: 'audio/mpeg', data: `data:audio/mpeg;base64,${Buffer.from(`voice${i}`).toString('base64')}` };
+  }
+  assert.equal(games.readiness(value, 'en', 'pl', assets).picture, 5);
+  assert.equal(games.readiness(value, 'en', 'pl', assets).listening, 5);
+  value.items[4].media.image = 'image-0';
+  assert.equal(games.readiness(value, 'en', 'pl', assets).picture, 0);
+  assert.equal(games.readiness(value, 'en', 'pl', assets).listening, 5);
+  value.items[4].media.image = 'image-4';
+  assets['image-4'].data = assets['image-0'].data;
+  assert.equal(games.readiness(value, 'en', 'pl', assets).picture, 0);
+});

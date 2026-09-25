@@ -4,7 +4,8 @@
   const i18n = window.WordsI18n;
   const games = window.WordsGames;
   const effects = window.WordsEffects;
-  const STORAGE_KEY = 'words.collection.v1';
+  const media = window.WordsMedia;
+  const storage = window.WordsStorage;
   const UI_KEY = 'words.uiLanguage.v1';
   const byId = id => document.getElementById(id);
   let collection = model.newCollection();
@@ -14,6 +15,8 @@
   let deck = [];
   let cardIndex = 0;
   let challenge = null;
+  let draftAssets = {};
+  let mediaPending = 0;
   let uiLanguage = 'en';
 
   function t(key, params = {}) {
@@ -35,21 +38,21 @@
     byId('ui-language').setAttribute('aria-label', t('interfaceLanguage'));
     if (draft) byId('editor-title').textContent = draft.title || t('newLesson');
     updateSoundButton();
+    for (const row of byId('item-list').children) refreshMediaRow(row);
     renderReadiness();
     renderList();
   }
 
-  function saveCache() {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(collection)); }
-    catch (_) { message('storageFull'); }
-  }
+  function saveCache() { return storage.save(collection); }
 
-  function restoreCache() {
+  async function restoreCache() {
     try {
       const storedLocale = localStorage.getItem(UI_KEY);
       if (i18n.strings[storedLocale]) uiLanguage = storedLocale;
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) collection = model.validateCollection(JSON.parse(stored));
+    } catch (_) { /* interface preference is optional */ }
+    try {
+      const stored = await storage.load();
+      if (stored) collection = model.validateCollection(stored);
     } catch (_) {
       collection = model.newCollection();
       message('storageUnavailable');
@@ -57,7 +60,7 @@
   }
 
   function confirmDiscard() {
-    return !dirty || window.confirm(t('discardChanges'));
+    return (!dirty && !mediaPending) || window.confirm(t('discardChanges'));
   }
 
   function renderList() {
@@ -82,6 +85,7 @@
     const row = document.createElement('fieldset');
     row.className = 'item-row';
     row.dataset.id = item.id;
+    row._media = { image: item.media?.image || null, audio: { ...(item.media?.audio || {}) } };
     const grid = document.createElement('div');
     grid.className = 'term-grid';
     for (const language of model.LANGUAGES) {
@@ -99,14 +103,102 @@
     remove.type = 'button'; remove.className = 'button button-quiet danger remove-item';
     remove.dataset.i18n = 'remove'; remove.textContent = t('remove');
     remove.addEventListener('click', () => { row.remove(); dirty = true; });
-    row.append(grid, remove);
+    const attachments = document.createElement('details');
+    attachments.className = 'media-editor';
+    const summary = document.createElement('summary'); summary.dataset.i18n = 'mediaAttachments'; summary.textContent = t('mediaAttachments');
+    const content = document.createElement('div'); content.className = 'media-editor-grid';
+    const picture = document.createElement('div'); picture.className = 'media-slot';
+    const imageLabel = document.createElement('label'); imageLabel.dataset.i18n = 'addPicture'; imageLabel.textContent = t('addPicture');
+    const imageInput = document.createElement('input'); imageInput.type = 'file'; imageInput.accept = '.webp,.png,.jpg,.jpeg,image/webp,image/png,image/jpeg';
+    imageInput.id = `image-${item.id}`; imageLabel.htmlFor = imageInput.id;
+    imageInput.setAttribute('aria-label', t('addPicture'));
+    imageInput.addEventListener('change', async () => {
+      const file = imageInput.files[0]; imageInput.value = '';
+      if (!file) return;
+      mediaPending += 1;
+      try {
+        const asset = await media.importImage(file);
+        if (!row.isConnected) return;
+        const assetId = model.newAssetId();
+        draftAssets[assetId] = asset; row._media.image = assetId; dirty = true; refreshMediaRow(row);
+        message('imageAdded');
+      } catch (error) { message(error.message in i18n.strings.en ? error.message : 'mediaReadFailed'); }
+      finally { mediaPending -= 1; }
+    });
+    const imagePreview = document.createElement('div'); imagePreview.className = 'image-preview'; imagePreview.dataset.imagePreview = '';
+    picture.append(imageLabel, imageInput, imagePreview);
+    const audioSlot = document.createElement('div'); audioSlot.className = 'media-slot';
+    const audioLabel = document.createElement('label'); audioLabel.dataset.i18n = 'addPronunciation'; audioLabel.textContent = t('addPronunciation');
+    const audioSelect = document.createElement('select'); audioSelect.dataset.audioLanguage = '';
+    audioSelect.setAttribute('aria-label', t('audioLanguage'));
+    for (const language of model.LANGUAGES) {
+      const option = document.createElement('option'); option.value = language; option.textContent = t(i18n.languageNames[language]); audioSelect.append(option);
+    }
+    const audioInput = document.createElement('input'); audioInput.type = 'file'; audioInput.accept = '.mp3,.wav,.ogg,.webm,.m4a,audio/*';
+    audioInput.id = `audio-${item.id}`; audioLabel.htmlFor = audioInput.id;
+    audioInput.setAttribute('aria-label', t('addPronunciation'));
+    audioInput.addEventListener('change', async () => {
+      const file = audioInput.files[0]; audioInput.value = '';
+      if (!file) return;
+      const language = audioSelect.value;
+      mediaPending += 1;
+      try {
+        const asset = await media.importAudio(file);
+        if (!row.isConnected) return;
+        const assetId = model.newAssetId();
+        draftAssets[assetId] = asset; row._media.audio[language] = assetId; dirty = true; refreshMediaRow(row);
+        message('audioAdded');
+      } catch (error) { message(error.message in i18n.strings.en ? error.message : 'mediaReadFailed'); }
+      finally { mediaPending -= 1; }
+    });
+    const audioList = document.createElement('div'); audioList.className = 'audio-list'; audioList.dataset.audioList = '';
+    audioSlot.append(audioLabel, audioSelect, audioInput, audioList);
+    content.append(picture, audioSlot); attachments.append(summary, content);
+    row.append(grid, attachments, remove);
+    refreshMediaRow(row);
     return row;
+  }
+
+  function assetFor(assetId) { return draftAssets[assetId] || collection.assets[assetId]; }
+
+  function refreshMediaRow(row) {
+    const preview = row.querySelector('[data-image-preview]');
+    if (!preview) return;
+    preview.replaceChildren();
+    const image = assetFor(row._media.image);
+    if (image) {
+      const thumbnail = document.createElement('img'); thumbnail.src = image.data; thumbnail.alt = t('imagePreview');
+      const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'button button-quiet danger';
+      remove.textContent = t('removePicture');
+      remove.addEventListener('click', () => { row._media.image = null; dirty = true; refreshMediaRow(row); });
+      preview.append(thumbnail, remove);
+    } else {
+      const empty = document.createElement('span'); empty.className = 'muted'; empty.textContent = t('noPicture'); preview.append(empty);
+    }
+    const audioList = row.querySelector('[data-audio-list]'); audioList.replaceChildren();
+    const select = row.querySelector('[data-audio-language]');
+    for (const option of select.options) option.textContent = t(i18n.languageNames[option.value]);
+    for (const [language, assetId] of Object.entries(row._media.audio)) {
+      const line = document.createElement('div'); line.className = 'audio-attachment';
+      const label = document.createElement('span'); label.textContent = t(i18n.languageNames[language]);
+      const play = document.createElement('button'); play.type = 'button'; play.className = 'button button-secondary';
+      play.textContent = t('playAudio'); play.setAttribute('aria-label', `${t('playAudio')} · ${label.textContent}`);
+      play.addEventListener('click', () => media.play(assetFor(assetId), () => message('audioPlaybackFailed')));
+      const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'button button-quiet danger';
+      remove.textContent = t('remove'); remove.setAttribute('aria-label', `${t('remove')} · ${label.textContent}`);
+      remove.addEventListener('click', () => { delete row._media.audio[language]; dirty = true; refreshMediaRow(row); });
+      line.append(label, play, remove); audioList.append(line);
+    }
+    row.querySelector('input[type="file"]').setAttribute('aria-label', t('addPicture'));
+    row.querySelectorAll('input[type="file"]')[1].setAttribute('aria-label', t('addPronunciation'));
+    select.setAttribute('aria-label', t('audioLanguage'));
   }
 
   function openLesson(id) {
     const saved = collection.lessons.find(lesson => lesson.id === id);
     if (!saved) return;
     draft = structuredClone(saved);
+    draftAssets = {};
     currentId = id;
     dirty = false;
     byId('welcome').hidden = true;
@@ -122,7 +214,9 @@
 
   function newLesson() {
     if (!confirmDiscard()) return;
+    resetDeck();
     draft = model.createLesson();
+    draftAssets = {};
     currentId = null;
     dirty = false;
     byId('welcome').hidden = true;
@@ -141,48 +235,54 @@
     const items = [...byId('item-list').children].map(row => {
       const terms = {};
       for (const input of row.querySelectorAll('[data-language]')) terms[input.dataset.language] = input.value;
-      return { id: row.dataset.id, terms, media: { image: null, audio: null } };
+      return { id: row.dataset.id, terms, media: { image: row._media.image, audio: { ...row._media.audio } } };
     }).filter(item => Object.values(item.terms).some(term => term.trim()));
     return { ...draft, title: byId('lesson-name').value, updatedAt: now, items };
   }
 
-  function save(event) {
+  async function save(event) {
     event.preventDefault();
+    if (mediaPending) { message('mediaBusy'); return; }
     try {
       const updated = collectDraft();
-      collection = model.saveLesson(collection, updated);
+      const referenced = new Set(updated.items.flatMap(item => [item.media.image, ...Object.values(item.media.audio)]).filter(Boolean));
+      const additions = Object.fromEntries(Object.entries(draftAssets).filter(([assetId]) => referenced.has(assetId)));
+      collection = model.saveLesson(collection, updated, additions);
       draft = model.validateLesson(updated);
+      draftAssets = {};
       currentId = draft.id;
       dirty = false;
       byId('editor-title').textContent = draft.title;
       byId('duplicate-lesson').hidden = false;
       byId('delete-lesson').hidden = false;
       byId('practice').hidden = false;
-      resetDeck(); renderList(); renderReadiness(); saveCache(); message('saved');
+      resetDeck(); renderList(); renderReadiness(); message(await saveCache() ? 'saved' : 'storageFull');
     } catch (error) { message(error.message in i18n.strings.en ? error.message : 'invalidLesson'); }
   }
 
-  function duplicate() {
+  async function duplicate() {
     if (!confirmDiscard()) return;
     const original = collection.lessons.find(lesson => lesson.id === currentId);
     if (!original) return;
     const copy = model.duplicateLesson(original);
     copy.title = `${copy.title} (${t('duplicateSuffix')})`;
     collection = model.saveLesson(collection, copy);
-    saveCache(); openLesson(copy.id); message('duplicated');
+    const cached = await saveCache(); openLesson(copy.id); message(cached ? 'duplicated' : 'storageFull');
   }
 
-  function removeLesson() {
+  async function removeLesson() {
     if (!currentId || !window.confirm(t('confirmDelete'))) return;
-    collection.lessons = collection.lessons.filter(lesson => lesson.id !== currentId);
-    saveCache(); draft = null; currentId = null; dirty = false; deck = [];
+    resetDeck();
+    collection = model.pruneAssets({ ...collection, lessons: collection.lessons.filter(lesson => lesson.id !== currentId) });
+    const cached = await saveCache(); draft = null; draftAssets = {}; currentId = null; dirty = false; deck = [];
     byId('editor').hidden = true; byId('practice').hidden = true; byId('welcome').hidden = false;
-    renderList(); message('deleted');
+    renderList(); message(cached ? 'deleted' : 'storageFull');
   }
 
   function exportLibrary() {
     if (!collection.lessons.length) { message('noLessons'); return; }
-    const blob = new Blob([JSON.stringify(collection, null, 2)], { type: 'application/json' });
+    if (dirty || mediaPending) { message('saveBeforeExport'); return; }
+    const blob = new Blob([JSON.stringify(collection)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url; link.download = `words-lessons-${new Date().toISOString().slice(0, 10)}.json`;
@@ -195,16 +295,16 @@
     const file = event.target.files[0];
     event.target.value = '';
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) { message('fileTooLarge'); return; }
+    if (file.size > 36_000_000) { message('fileTooLarge'); return; }
     let imported;
     try { imported = model.validateCollection(JSON.parse(await file.text())); }
     catch (error) { message(error.message in i18n.strings.en ? error.message : 'invalidFile'); return; }
     if (!window.confirm(t('confirmImport'))) return;
-    collection = imported; draft = null; currentId = null; dirty = false;
-    saveCache(); renderList();
+    media.stop(); collection = imported; draft = null; draftAssets = {}; currentId = null; dirty = false;
+    const cached = await saveCache(); renderList();
     if (collection.lessons.length) openLesson(collection.lessons[0].id);
     else { byId('editor').hidden = true; byId('practice').hidden = true; byId('welcome').hidden = false; }
-    message('imported');
+    message(cached ? 'imported' : 'storageFull');
   }
 
   function fillLanguages() {
@@ -219,6 +319,7 @@
   }
 
   function resetDeck() {
+    media.stop();
     deck = []; cardIndex = 0; byId('card-area').hidden = true;
     challenge = null; byId('challenge-area').hidden = true;
     byId('practice-message').textContent = '';
@@ -248,20 +349,44 @@
     const back = byId('back-language').value;
     const item = deck[cardIndex];
     byId('card-progress').textContent = t('cardCount', { current: cardIndex + 1, total: deck.length });
+    byId('card-meter').max = deck.length;
+    byId('card-meter').value = cardIndex + 1;
     byId('card-prompt').textContent = item.terms[front];
     byId('card-prompt').lang = front; byId('card-prompt').dir = front === 'ar' ? 'rtl' : 'ltr';
     byId('card-answer').textContent = item.terms[back];
     byId('card-answer').lang = back; byId('card-answer').dir = back === 'ar' ? 'rtl' : 'ltr';
     byId('card-answer').hidden = true;
+    const picture = assetFor(item.media.image);
+    byId('card-picture').hidden = !picture;
+    if (picture) byId('card-picture').src = picture.data;
+    else byId('card-picture').removeAttribute('src');
+    byId('play-card-front').hidden = !assetFor(item.media.audio[front]);
+    byId('play-card-back').hidden = true;
     byId('reveal-card').disabled = false;
     effects.animate(byId('flashcard'), 'card');
   }
 
   function nextCard() {
     if (!deck.length) return;
+    media.stop();
     if (cardIndex === deck.length - 1) {
       resetCardOnly(); byId('practice-message').textContent = t('endOfDeck');
     } else { cardIndex += 1; showCard(); }
+  }
+
+  function revealCard() {
+    if (!deck.length || !byId('card-answer').hidden) return;
+    byId('card-answer').hidden = false;
+    byId('reveal-card').disabled = true;
+    byId('play-card-back').hidden = !assetFor(deck[cardIndex].media.audio[byId('back-language').value]);
+    effects.animate(byId('card-answer'), 'card');
+    byId('next-card').focus();
+  }
+
+  function playCardAudio(selectId) {
+    if (!deck.length) return;
+    const language = byId(selectId).value;
+    media.play(assetFor(deck[cardIndex].media.audio[language]), () => message('audioPlaybackFailed'));
   }
 
   function updateSoundButton() {
@@ -276,11 +401,11 @@
     const front = byId('front-language').value;
     const back = byId('back-language').value;
     if (front === back) { byId('activity-readiness').textContent = t('chooseTwo'); return; }
-    const counts = games.readiness(saved, front, back);
+    const counts = games.readiness(saved, front, back, collection.assets);
     const mode = byId('game-mode').value;
     byId('activity-readiness').textContent = counts[mode]
       ? t('readyItems', { count: counts[mode] })
-      : t(mode === 'quiz' || mode === 'matching' ? 'needFour' : 'noCards');
+      : t(mode === 'picture' ? 'needPictures' : mode === 'listening' ? 'needAudio' : mode === 'quiz' || mode === 'matching' ? 'needFour' : 'noCards');
   }
 
   function setTerm(element, text, language) {
@@ -290,9 +415,11 @@
   }
 
   function startChallenge(lesson, mode, front, back) {
-    const items = games.eligiblePairs(lesson, front, back, true);
-    if ((mode === 'quiz' || mode === 'matching') && items.length < 4) {
-      byId('practice-message').textContent = t('needFour'); return;
+    const items = mode === 'picture' || mode === 'listening'
+      ? games.mediaPairs(lesson, collection.assets, front, back, mode)
+      : games.eligiblePairs(lesson, front, back, true);
+    if (['quiz', 'matching', 'picture', 'listening'].includes(mode) && items.length < 4) {
+      byId('practice-message').textContent = t(mode === 'picture' ? 'needPictures' : mode === 'listening' ? 'needAudio' : 'needFour'); return;
     }
     if (!items.length) { byId('practice-message').textContent = t('noCards'); return; }
     challenge = { mode, front, back, items: games.shuffle(items), index: 0, score: 0, locked: false,
@@ -319,13 +446,30 @@
     byId('challenge-feedback').textContent = '';
     byId('challenge-feedback').className = 'challenge-feedback';
     byId('challenge-next').hidden = true;
+    byId('challenge-media').replaceChildren();
     byId('typing-form').hidden = state.mode !== 'typing';
     byId('challenge-score').textContent = t('score', { score: state.score });
     if (state.mode === 'matching') { renderMatching(); return; }
     byId('challenge-progress').textContent = t('cardCount', { current: state.index + 1, total: state.items.length });
+    byId('challenge-meter').max = state.items.length;
+    byId('challenge-meter').value = state.index + 1;
     const item = state.items[state.index];
-    setTerm(byId('challenge-prompt'), item.terms[state.front], state.front);
-    if (state.mode === 'quiz') {
+    if (state.mode === 'picture' || state.mode === 'listening') {
+      const prompt = byId('challenge-prompt');
+      prompt.textContent = t(state.mode === 'picture' ? 'picturePrompt' : 'listenPrompt');
+      prompt.removeAttribute('lang'); prompt.removeAttribute('dir');
+      if (state.mode === 'picture') {
+        const image = document.createElement('img'); image.className = 'question-picture';
+        image.src = assetFor(item.media.image).data; image.alt = t('pictureClue');
+        byId('challenge-media').append(image);
+      } else {
+        const play = document.createElement('button'); play.type = 'button'; play.className = 'listen-button';
+        play.textContent = `▶ ${t('playAudio')}`;
+        play.addEventListener('click', () => media.play(assetFor(item.media.audio[state.front]), () => message('audioPlaybackFailed')));
+        byId('challenge-media').append(play);
+      }
+    } else setTerm(byId('challenge-prompt'), item.terms[state.front], state.front);
+    if (['quiz', 'picture', 'listening'].includes(state.mode)) {
       options.classList.add('quiz-options');
       for (const choice of games.quizChoices(item, state.items)) {
         const button = optionButton(choice, state.back);
@@ -390,6 +534,8 @@
     const round = state.rounds[state.roundIndex];
     state.matched = new Set(); state.selectedFront = null; state.selectedBack = null;
     byId('challenge-progress').textContent = t('roundCount', { current: state.roundIndex + 1, total: state.rounds.length });
+    byId('challenge-meter').max = state.rounds.length;
+    byId('challenge-meter').value = state.roundIndex + 1;
     byId('challenge-score').textContent = t('matchedCount', { count: state.score, total: state.items.length });
     byId('challenge-prompt').textContent = t('matchInstruction');
     byId('challenge-prompt').removeAttribute('lang'); byId('challenge-prompt').removeAttribute('dir');
@@ -445,6 +591,7 @@
   function nextChallenge() {
     const state = challenge;
     if (!state) return;
+    media.stop();
     if (state.mode === 'matching') {
       if (state.roundIndex === state.rounds.length - 1) { finishChallenge(); return; }
       state.roundIndex += 1;
@@ -457,7 +604,9 @@
 
   function finishChallenge() {
     const state = challenge;
+    media.stop();
     byId('challenge-options').replaceChildren();
+    byId('challenge-media').replaceChildren();
     byId('typing-form').hidden = true;
     byId('challenge-next').hidden = true;
     byId('challenge-progress').textContent = '';
@@ -473,8 +622,8 @@
     challenge = null;
   }
 
-  function initialize() {
-    restoreCache();
+  async function initialize() {
+    await restoreCache();
     byId('ui-language').value = uiLanguage;
     fillLanguages(); translationPass();
     if (collection.lessons.length) openLesson(collection.lessons[0].id);
@@ -493,6 +642,7 @@
     byId('duplicate-lesson').addEventListener('click', duplicate);
     byId('delete-lesson').addEventListener('click', removeLesson);
     byId('export-library').addEventListener('click', exportLibrary);
+    byId('import-trigger').addEventListener('click', () => byId('import-file').click());
     byId('import-file').addEventListener('change', importLibrary);
     byId('start-cards').addEventListener('click', startDeck);
     for (const id of ['front-language', 'back-language', 'game-mode']) {
@@ -503,11 +653,13 @@
     });
     byId('typing-form').addEventListener('submit', answerTyping);
     byId('challenge-next').addEventListener('click', nextChallenge);
-    byId('reveal-card').addEventListener('click', () => { byId('card-answer').hidden = false; byId('reveal-card').disabled = true; effects.animate(byId('card-answer'), 'card'); byId('next-card').focus(); });
+    byId('reveal-card').addEventListener('click', revealCard);
     byId('next-card').addEventListener('click', nextCard);
     byId('flashcard').addEventListener('keydown', event => {
-      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); byId('card-answer').hidden = false; byId('reveal-card').disabled = true; effects.animate(byId('card-answer'), 'card'); byId('next-card').focus(); }
+      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); revealCard(); }
     });
+    byId('play-card-front').addEventListener('click', () => playCardAudio('front-language'));
+    byId('play-card-back').addEventListener('click', () => playCardAudio('back-language'));
     window.addEventListener('beforeunload', event => { if (dirty) { event.preventDefault(); event.returnValue = ''; } });
   }
   initialize();
