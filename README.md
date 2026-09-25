@@ -10,7 +10,8 @@ Download the repository as a ZIP, extract it, and open `index.html` in a current
 
 - Create, edit, duplicate, and delete named lessons.
 - Add vocabulary entries with terms in any of the four languages. An entry needs at least two terms to be usable as a flashcard.
-- Choose a front and back language, then practise with flashcards, multiple choice, matching pairs, typed spelling, picture choice, or listen and choose. Games show when a lesson lacks enough suitable items and skip ambiguous repeated pictures or recordings.
+- Choose a front and back language, then practise with flashcards, multiple choice, matching pairs, typed spelling, letter tiles, missing letters, picture choice, listen and choose, or listen and type. Games show when a lesson lacks suitable items and skip ambiguous repeated pictures or recordings.
+- Letter tiles and missing letters accept suitable single words and keep combined Unicode letters intact. Listen-and-type uses a recording in the answer language; press Play to hear it. Spelling rounds allow one retry before showing the answer.
 - Attach one picture to a word and optional pronunciation recordings for each language. WebP, PNG, and JPG images are copied into the lesson as resized WebP. Audio may be MP3, WAV, OGG, WebM, or M4A when the browser supports that file. The original files stay in place.
 - Hear short local feedback cues for answers and mute them at any time. Reduced-motion system preferences are respected.
 - Change the interface language. Arabic uses a right-to-left layout; individual term fields retain their correct writing direction.

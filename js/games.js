@@ -55,6 +55,50 @@
     return pairs.filter(item => clues.get(clueFor(item)) === 1);
   }
 
+  function hasGraphemeSupport() {
+    return typeof Intl !== 'undefined' && typeof Intl.Segmenter === 'function';
+  }
+
+  function spellingClusters(text, language) {
+    if (!hasGraphemeSupport()) return [];
+    const word = text.normalize('NFC').trim();
+    if (!/^[\p{L}\p{M}]+$/u.test(word)) return [];
+    const clusters = Array.from(new Intl.Segmenter(language, { granularity: 'grapheme' }).segment(word), part => part.segment);
+    if (clusters.length > 14 || clusters.some(cluster => !/^\p{L}\p{M}*$/u.test(cluster))) return [];
+    return clusters;
+  }
+
+  function spellingPairs(lesson, front, back, mode) {
+    return eligiblePairs(lesson, front, back, true).filter(item => {
+      const clusters = spellingClusters(item.terms[back], back);
+      const minimum = mode === 'missing' ? 4 : 3;
+      return clusters.length >= minimum && new Set(clusters.map(cluster => answerKey(cluster, back))).size >= 2;
+    });
+  }
+
+  function listeningTypingPairs(lesson, assets, front, back) {
+    return mediaPairs(lesson, assets, back, front, 'listening');
+  }
+
+  function tileOrder(clusters, random = Math.random) {
+    const tiles = shuffle(clusters.map((letter, id) => ({ id, letter })), random);
+    if (tiles.every((tile, index) => tile.letter === clusters[index])) {
+      const swap = tiles.findIndex(tile => tile.letter !== tiles[0].letter);
+      if (swap > 0) [tiles[0], tiles[swap]] = [tiles[swap], tiles[0]];
+    }
+    return tiles;
+  }
+
+  function missingPlan(clusters, random = Math.random) {
+    const count = Math.min(2, Math.floor(clusters.length / 3));
+    const positions = shuffle(clusters.map((_, index) => index), random).slice(0, count).sort((a, b) => a - b);
+    const hidden = new Set(positions);
+    return {
+      pattern: clusters.map((letter, index) => hidden.has(index) ? '□' : letter).join(''),
+      answer: positions.map(index => clusters[index]).join('')
+    };
+  }
+
   function matchingRounds(items, random = Math.random) {
     if (items.length < 4) throw new Error('needFour');
     const pool = shuffle(items, random);
@@ -74,15 +118,22 @@
     const distinct = eligiblePairs(lesson, front, back, true);
     const pictures = mediaPairs(lesson, assets, front, back, 'picture').length;
     const listening = mediaPairs(lesson, assets, front, back, 'listening').length;
+    const tiles = spellingPairs(lesson, front, back, 'tiles').length;
+    const missing = spellingPairs(lesson, front, back, 'missing').length;
+    const listenType = listeningTypingPairs(lesson, assets, front, back).length;
     return {
       flashcards: cards.length,
       quiz: distinct.length >= 4 ? distinct.length : 0,
       matching: distinct.length >= 4 ? distinct.length : 0,
       typing: distinct.length,
+      tiles,
+      missing,
+      listenType,
       picture: pictures >= 4 ? pictures : 0,
       listening: listening >= 4 ? listening : 0
     };
   }
 
-  return { answerKey, sameAnswer, eligiblePairs, mediaPairs, shuffle, quizChoices, matchingRounds, readiness };
+  return { answerKey, sameAnswer, eligiblePairs, mediaPairs, hasGraphemeSupport, spellingClusters,
+    spellingPairs, listeningTypingPairs, tileOrder, missingPlan, shuffle, quizChoices, matchingRounds, readiness };
 });
