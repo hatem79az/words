@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <title>Words</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/model.js" defer></script>
+    <script src="js/i18n.js" defer></script>
+    <script src="js/app.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main" data-i18n="skip">Skip to content</a>
+    <header class="site-header">
+      <div class="brand" aria-label="Words"><span class="brand-mark" aria-hidden="true">W</span><span>Words</span></div>
+      <div class="header-actions">
+        <label for="ui-language" data-i18n="interfaceLanguage">Interface language</label>
+        <select id="ui-language" aria-label="Interface language">
+          <option value="en">English</option>
+          <option value="pl">Polski</option>
+          <option value="ar">العربية</option>
+          <option value="de">Deutsch</option>
+        </select>
+      </div>
+    </header>
+
+    <main id="main" class="layout">
+      <aside class="sidebar" aria-labelledby="library-title">
+        <div class="sidebar-heading">
+          <div><p class="eyebrow" data-i18n="yourCollection">Your collection</p><h1 id="library-title" data-i18n="lessons">Lessons</h1></div>
+          <button id="new-lesson" class="button button-primary" type="button" data-i18n="newLesson">New lesson</button>
+        </div>
+        <ul id="lesson-list" class="lesson-list" aria-label="Lessons"></ul>
+        <p id="empty-library" class="muted" data-i18n="emptyLibrary">Create your first lesson to begin.</p>
+        <div class="library-actions">
+          <button id="export-library" class="button button-secondary" type="button" data-i18n="exportLibrary">Export lessons</button>
+          <label class="button button-secondary file-button" for="import-file" data-i18n="importLibrary">Import lessons</label>
+          <input id="import-file" class="visually-hidden" type="file" accept=".json,application/json">
+        </div>
+        <p class="storage-note" data-i18n="backupNote">Export a JSON backup to keep or move your lessons. Browser storage is only a convenience.</p>
+      </aside>
+
+      <section class="workspace" aria-label="Lesson workspace">
+        <div id="welcome" class="welcome panel">
+          <p class="eyebrow" data-i18n="learnYourWay">Learn your way</p>
+          <h2 data-i18n="welcomeTitle">One lesson, many ways to practise</h2>
+          <p data-i18n="welcomeText">Start with words in any two languages. Your saved lesson can power different games as we build them.</p>
+          <button id="welcome-new" class="button button-primary" type="button" data-i18n="createLesson">Create a lesson</button>
+        </div>
+
+        <div id="editor" class="panel" hidden>
+          <div class="panel-heading">
+            <div><p class="eyebrow" data-i18n="lessonEditor">Lesson editor</p><h2 id="editor-title" data-i18n="newLesson">New lesson</h2></div>
+            <div class="row-actions">
+              <button id="duplicate-lesson" class="button button-quiet" type="button" data-i18n="duplicate">Duplicate</button>
+              <button id="delete-lesson" class="button button-quiet danger" type="button" data-i18n="delete">Delete</button>
+            </div>
+          </div>
+          <form id="lesson-form">
+            <label class="field-label" for="lesson-name" data-i18n="lessonName">Lesson name</label>
+            <input id="lesson-name" name="lesson-name" maxlength="120" required autocomplete="off" data-i18n-placeholder="lessonNameExample" placeholder="For example, Animals">
+            <div class="section-heading"><h3 data-i18n="wordsAndPhrases">Words and phrases</h3><button id="add-item" class="button button-secondary" type="button" data-i18n="addWord">Add word</button></div>
+            <p class="muted" data-i18n="entryHint">Add at least two languages for each card. Leave other language fields empty if you like.</p>
+            <div id="item-list" class="item-list"></div>
+            <div class="form-actions"><button class="button button-primary" type="submit" data-i18n="saveLesson">Save lesson</button></div>
+          </form>
+        </div>
+
+        <div id="practice" class="panel" hidden>
+          <div class="panel-heading"><div><p class="eyebrow" data-i18n="practice">Practice</p><h2 data-i18n="flashcards">Flashcards</h2></div></div>
+          <div class="practice-settings">
+            <label for="front-language" data-i18n="frontLanguage">Front language</label>
+            <select id="front-language"></select>
+            <label for="back-language" data-i18n="backLanguage">Back language</label>
+            <select id="back-language"></select>
+            <button id="start-cards" class="button button-primary" type="button" data-i18n="start">Start</button>
+          </div>
+          <p id="practice-message" class="muted"></p>
+          <div id="card-area" hidden>
+            <p id="card-progress" class="card-progress"></p>
+            <div class="flashcard" id="flashcard" tabindex="0" aria-live="polite"><p id="card-prompt"></p><p id="card-answer" hidden></p></div>
+            <div class="card-actions"><button id="reveal-card" class="button button-secondary" type="button" data-i18n="reveal">Reveal answer</button><button id="next-card" class="button button-primary" type="button" data-i18n="next">Next card</button></div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <div id="status" class="status" role="status" aria-live="polite"></div>
+  </body>
+</html>
