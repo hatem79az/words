@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="css/style.css">
     <script src="js/model.js" defer></script>
     <script src="js/i18n.js" defer></script>
+    <script src="js/games.js" defer></script>
+    <script src="js/effects.js" defer></script>
     <script src="js/app.js" defer></script>
   </head>
   <body>
@@ -68,19 +70,38 @@
         </div>
 
         <div id="practice" class="panel" hidden>
-          <div class="panel-heading"><div><p class="eyebrow" data-i18n="practice">Practice</p><h2 data-i18n="flashcards">Flashcards</h2></div></div>
+          <div class="panel-heading"><div><p class="eyebrow" data-i18n="practice">Practice</p><h2 data-i18n="chooseActivity">Choose an activity</h2></div><button id="sound-toggle" class="button button-quiet" type="button" aria-pressed="false">Sound on</button></div>
           <div class="practice-settings">
             <label for="front-language" data-i18n="frontLanguage">Front language</label>
             <select id="front-language"></select>
             <label for="back-language" data-i18n="backLanguage">Back language</label>
             <select id="back-language"></select>
+            <label for="game-mode" data-i18n="activity">Activity</label>
+            <select id="game-mode">
+              <option value="flashcards" data-i18n="flashcards">Flashcards</option>
+              <option value="quiz" data-i18n="quiz">Multiple choice</option>
+              <option value="matching" data-i18n="matching">Match pairs</option>
+              <option value="typing" data-i18n="typing">Type the answer</option>
+            </select>
             <button id="start-cards" class="button button-primary" type="button" data-i18n="start">Start</button>
           </div>
+          <p id="activity-readiness" class="muted"></p>
           <p id="practice-message" class="muted"></p>
           <div id="card-area" hidden>
             <p id="card-progress" class="card-progress"></p>
             <div class="flashcard" id="flashcard" tabindex="0" aria-live="polite"><p id="card-prompt"></p><p id="card-answer" hidden></p></div>
             <div class="card-actions"><button id="reveal-card" class="button button-secondary" type="button" data-i18n="reveal">Reveal answer</button><button id="next-card" class="button button-primary" type="button" data-i18n="next">Next card</button></div>
+          </div>
+          <div id="challenge-area" hidden>
+            <div class="challenge-heading"><p id="challenge-progress" class="card-progress"></p><p id="challenge-score" class="card-progress"></p></div>
+            <p id="challenge-prompt" class="challenge-prompt"></p>
+            <div id="challenge-options" class="challenge-options"></div>
+            <form id="typing-form" class="typing-form" hidden>
+              <label for="typing-answer" data-i18n="yourAnswer">Your answer</label>
+              <div class="typing-controls"><input id="typing-answer" type="text" autocomplete="off" maxlength="500"><button class="button button-primary" type="submit" data-i18n="check">Check</button></div>
+            </form>
+            <p id="challenge-feedback" class="challenge-feedback" role="status" aria-live="polite"></p>
+            <button id="challenge-next" class="button button-primary" type="button" data-i18n="next" hidden>Next card</button>
           </div>
         </div>
       </section>

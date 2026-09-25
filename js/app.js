@@ -2,6 +2,8 @@
   'use strict';
   const model = window.WordsModel;
   const i18n = window.WordsI18n;
+  const games = window.WordsGames;
+  const effects = window.WordsEffects;
   const STORAGE_KEY = 'words.collection.v1';
   const UI_KEY = 'words.uiLanguage.v1';
   const byId = id => document.getElementById(id);
@@ -11,6 +13,7 @@
   let dirty = false;
   let deck = [];
   let cardIndex = 0;
+  let challenge = null;
   let uiLanguage = 'en';
 
   function t(key, params = {}) {
@@ -31,8 +34,9 @@
     byId('lesson-list').setAttribute('aria-label', t('lessons'));
     byId('ui-language').setAttribute('aria-label', t('interfaceLanguage'));
     if (draft) byId('editor-title').textContent = draft.title || t('newLesson');
+    updateSoundButton();
+    renderReadiness();
     renderList();
-    if (deck.length) showCard();
   }
 
   function saveCache() {
@@ -113,7 +117,7 @@
     byId('lesson-name').value = draft.title;
     byId('editor-title').textContent = draft.title;
     byId('item-list').replaceChildren(...draft.items.map(makeItemRow));
-    resetDeck(); renderList();
+    resetDeck(); renderList(); renderReadiness();
   }
 
   function newLesson() {
@@ -154,7 +158,7 @@
       byId('duplicate-lesson').hidden = false;
       byId('delete-lesson').hidden = false;
       byId('practice').hidden = false;
-      resetDeck(); renderList(); saveCache(); message('saved');
+      resetDeck(); renderList(); renderReadiness(); saveCache(); message('saved');
     } catch (error) { message(error.message in i18n.strings.en ? error.message : 'invalidLesson'); }
   }
 
@@ -216,14 +220,19 @@
 
   function resetDeck() {
     deck = []; cardIndex = 0; byId('card-area').hidden = true;
+    challenge = null; byId('challenge-area').hidden = true;
     byId('practice-message').textContent = '';
   }
 
   function startDeck() {
     const front = byId('front-language').value;
     const back = byId('back-language').value;
-    if (front === back) { byId('practice-message').textContent = t('chooseTwo'); resetCardOnly(); return; }
+    resetDeck();
+    if (front === back) { byId('practice-message').textContent = t('chooseTwo'); return; }
     const saved = collection.lessons.find(lesson => lesson.id === currentId);
+    if (!saved) return;
+    const mode = byId('game-mode').value;
+    if (mode !== 'flashcards') { startChallenge(saved, mode, front, back); return; }
     deck = model.cardsFor(saved, front, back);
     cardIndex = 0;
     byId('practice-message').textContent = deck.length ? '' : t('noCards');
@@ -245,6 +254,7 @@
     byId('card-answer').lang = back; byId('card-answer').dir = back === 'ar' ? 'rtl' : 'ltr';
     byId('card-answer').hidden = true;
     byId('reveal-card').disabled = false;
+    effects.animate(byId('flashcard'), 'card');
   }
 
   function nextCard() {
@@ -252,6 +262,215 @@
     if (cardIndex === deck.length - 1) {
       resetCardOnly(); byId('practice-message').textContent = t('endOfDeck');
     } else { cardIndex += 1; showCard(); }
+  }
+
+  function updateSoundButton() {
+    const button = byId('sound-toggle');
+    button.setAttribute('aria-pressed', String(effects.isMuted()));
+    button.textContent = t(effects.isMuted() ? 'soundOff' : 'soundOn');
+  }
+
+  function renderReadiness() {
+    const saved = collection.lessons.find(lesson => lesson.id === currentId);
+    if (!saved) { byId('activity-readiness').textContent = ''; return; }
+    const front = byId('front-language').value;
+    const back = byId('back-language').value;
+    if (front === back) { byId('activity-readiness').textContent = t('chooseTwo'); return; }
+    const counts = games.readiness(saved, front, back);
+    const mode = byId('game-mode').value;
+    byId('activity-readiness').textContent = counts[mode]
+      ? t('readyItems', { count: counts[mode] })
+      : t(mode === 'quiz' || mode === 'matching' ? 'needFour' : 'noCards');
+  }
+
+  function setTerm(element, text, language) {
+    element.textContent = text;
+    element.lang = language;
+    element.dir = language === 'ar' ? 'rtl' : 'ltr';
+  }
+
+  function startChallenge(lesson, mode, front, back) {
+    const items = games.eligiblePairs(lesson, front, back, true);
+    if ((mode === 'quiz' || mode === 'matching') && items.length < 4) {
+      byId('practice-message').textContent = t('needFour'); return;
+    }
+    if (!items.length) { byId('practice-message').textContent = t('noCards'); return; }
+    challenge = { mode, front, back, items: games.shuffle(items), index: 0, score: 0, locked: false,
+      rounds: mode === 'matching' ? games.matchingRounds(items) : [], roundIndex: 0,
+      matched: new Set(), selectedFront: null, selectedBack: null, attempts: 0 };
+    byId('challenge-area').hidden = false;
+    renderChallenge();
+  }
+
+  function optionButton(item, language, side = '') {
+    const button = document.createElement('button');
+    button.type = 'button'; button.className = 'game-option';
+    button.dataset.itemId = item.id; button.dataset.side = side;
+    setTerm(button, item.terms[language], language);
+    return button;
+  }
+
+  function renderChallenge() {
+    if (!challenge) return;
+    const state = challenge;
+    state.locked = false;
+    const options = byId('challenge-options');
+    options.replaceChildren(); options.className = 'challenge-options';
+    byId('challenge-feedback').textContent = '';
+    byId('challenge-feedback').className = 'challenge-feedback';
+    byId('challenge-next').hidden = true;
+    byId('typing-form').hidden = state.mode !== 'typing';
+    byId('challenge-score').textContent = t('score', { score: state.score });
+    if (state.mode === 'matching') { renderMatching(); return; }
+    byId('challenge-progress').textContent = t('cardCount', { current: state.index + 1, total: state.items.length });
+    const item = state.items[state.index];
+    setTerm(byId('challenge-prompt'), item.terms[state.front], state.front);
+    if (state.mode === 'quiz') {
+      options.classList.add('quiz-options');
+      for (const choice of games.quizChoices(item, state.items)) {
+        const button = optionButton(choice, state.back);
+        button.addEventListener('click', () => answerQuiz(button, item));
+        options.append(button);
+      }
+    } else {
+      const input = byId('typing-answer');
+      input.value = ''; input.disabled = false; input.lang = state.back;
+      input.dir = state.back === 'ar' ? 'rtl' : 'ltr';
+      input.focus();
+    }
+  }
+
+  function answerQuiz(button, item) {
+    const state = challenge;
+    if (!state || state.locked) return;
+    state.locked = true;
+    const correct = button.dataset.itemId === item.id;
+    if (correct) state.score += 1;
+    for (const option of byId('challenge-options').querySelectorAll('button')) {
+      option.disabled = true;
+      if (option.dataset.itemId === item.id) option.classList.add('correct');
+      else if (option === button) option.classList.add('wrong');
+    }
+    feedback(correct, button, item.terms[state.back]);
+    prepareNext();
+  }
+
+  function answerTyping(event) {
+    event.preventDefault();
+    const state = challenge;
+    if (!state || state.mode !== 'typing' || state.locked) return;
+    const input = byId('typing-answer');
+    if (!input.value.trim()) { byId('challenge-feedback').textContent = t('enterAnswer'); return; }
+    state.locked = true;
+    const expected = state.items[state.index].terms[state.back];
+    const correct = games.sameAnswer(input.value, expected, state.back);
+    if (correct) state.score += 1;
+    input.disabled = true;
+    feedback(correct, input, expected);
+    prepareNext();
+  }
+
+  function feedback(correct, element, expected) {
+    const output = byId('challenge-feedback');
+    output.className = `challenge-feedback ${correct ? 'positive' : 'negative'}`;
+    output.textContent = correct ? t('correct') : t('correctAnswer', { answer: expected });
+    effects.animate(element, correct ? 'correct' : 'wrong');
+    effects.play(correct ? 'correct' : 'wrong');
+    byId('challenge-score').textContent = t('score', { score: challenge.score });
+  }
+
+  function prepareNext() {
+    byId('challenge-next').hidden = false;
+    byId('challenge-next').textContent = t(challenge.index === challenge.items.length - 1 ? 'seeResults' : 'next');
+    byId('challenge-next').focus();
+  }
+
+  function renderMatching() {
+    const state = challenge;
+    const round = state.rounds[state.roundIndex];
+    state.matched = new Set(); state.selectedFront = null; state.selectedBack = null;
+    byId('challenge-progress').textContent = t('roundCount', { current: state.roundIndex + 1, total: state.rounds.length });
+    byId('challenge-score').textContent = t('matchedCount', { count: state.score, total: state.items.length });
+    byId('challenge-prompt').textContent = t('matchInstruction');
+    byId('challenge-prompt').removeAttribute('lang'); byId('challenge-prompt').removeAttribute('dir');
+    byId('challenge-options').classList.add('matching-options');
+    for (const [side, language] of [['front', state.front], ['back', state.back]]) {
+      const column = document.createElement('div'); column.className = 'match-column';
+      const heading = document.createElement('h3'); heading.textContent = t(side === 'front' ? 'frontLanguage' : 'backLanguage');
+      column.append(heading);
+      for (const item of games.shuffle(round)) {
+        const button = optionButton(item, language, side);
+        button.addEventListener('click', () => chooseMatch(button));
+        column.append(button);
+      }
+      byId('challenge-options').append(column);
+    }
+  }
+
+  function chooseMatch(button) {
+    const state = challenge;
+    if (!state || state.locked || state.matched.has(button.dataset.itemId)) return;
+    const side = button.dataset.side;
+    const previous = side === 'front' ? state.selectedFront : state.selectedBack;
+    if (previous) previous.classList.remove('selected');
+    button.classList.add('selected');
+    if (side === 'front') state.selectedFront = button;
+    else state.selectedBack = button;
+    if (!state.selectedFront || !state.selectedBack) return;
+    state.attempts += 1;
+    const first = state.selectedFront;
+    const second = state.selectedBack;
+    const correct = first.dataset.itemId === second.dataset.itemId;
+    state.locked = true;
+    const output = byId('challenge-feedback');
+    output.className = `challenge-feedback ${correct ? 'positive' : 'negative'}`;
+    output.textContent = t(correct ? 'correct' : 'tryAnother');
+    effects.play(correct ? 'correct' : 'wrong');
+    effects.animate(second, correct ? 'correct' : 'wrong');
+    if (correct) {
+      state.score += 1; state.matched.add(first.dataset.itemId);
+      first.classList.add('matched'); second.classList.add('matched');
+      first.disabled = true; second.disabled = true;
+      byId('challenge-score').textContent = t('matchedCount', { count: state.score, total: state.items.length });
+    }
+    first.classList.remove('selected'); second.classList.remove('selected');
+    state.selectedFront = null; state.selectedBack = null; state.locked = false;
+    if (state.matched.size === state.rounds[state.roundIndex].length) {
+      byId('challenge-next').hidden = false;
+      byId('challenge-next').textContent = t(state.roundIndex === state.rounds.length - 1 ? 'seeResults' : 'nextRound');
+      byId('challenge-next').focus();
+    }
+  }
+
+  function nextChallenge() {
+    const state = challenge;
+    if (!state) return;
+    if (state.mode === 'matching') {
+      if (state.roundIndex === state.rounds.length - 1) { finishChallenge(); return; }
+      state.roundIndex += 1;
+    } else {
+      if (state.index === state.items.length - 1) { finishChallenge(); return; }
+      state.index += 1;
+    }
+    renderChallenge();
+  }
+
+  function finishChallenge() {
+    const state = challenge;
+    byId('challenge-options').replaceChildren();
+    byId('typing-form').hidden = true;
+    byId('challenge-next').hidden = true;
+    byId('challenge-progress').textContent = '';
+    byId('challenge-prompt').textContent = t('roundComplete');
+    byId('challenge-prompt').removeAttribute('lang'); byId('challenge-prompt').removeAttribute('dir');
+    byId('challenge-feedback').className = 'challenge-feedback positive';
+    byId('challenge-feedback').textContent = state.mode === 'matching'
+      ? t('matchResults', { attempts: state.attempts })
+      : t('finalScore', { score: state.score, total: state.items.length });
+    byId('challenge-score').textContent = '';
+    effects.animate(byId('challenge-prompt'), 'correct');
+    effects.play('complete');
+    challenge = null;
   }
 
   function initialize() {
@@ -276,10 +495,18 @@
     byId('export-library').addEventListener('click', exportLibrary);
     byId('import-file').addEventListener('change', importLibrary);
     byId('start-cards').addEventListener('click', startDeck);
-    byId('reveal-card').addEventListener('click', () => { byId('card-answer').hidden = false; byId('reveal-card').disabled = true; });
+    for (const id of ['front-language', 'back-language', 'game-mode']) {
+      byId(id).addEventListener('change', () => { resetDeck(); renderReadiness(); });
+    }
+    byId('sound-toggle').addEventListener('click', () => {
+      effects.setMuted(!effects.isMuted()); updateSoundButton();
+    });
+    byId('typing-form').addEventListener('submit', answerTyping);
+    byId('challenge-next').addEventListener('click', nextChallenge);
+    byId('reveal-card').addEventListener('click', () => { byId('card-answer').hidden = false; byId('reveal-card').disabled = true; effects.animate(byId('card-answer'), 'card'); byId('next-card').focus(); });
     byId('next-card').addEventListener('click', nextCard);
     byId('flashcard').addEventListener('keydown', event => {
-      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); byId('card-answer').hidden = false; byId('reveal-card').disabled = true; }
+      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); byId('card-answer').hidden = false; byId('reveal-card').disabled = true; effects.animate(byId('card-answer'), 'card'); byId('next-card').focus(); }
     });
     window.addEventListener('beforeunload', event => { if (dirty) { event.preventDefault(); event.returnValue = ''; } });
   }
