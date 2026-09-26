@@ -50,7 +50,16 @@
       listenTypePrompt: 'Listen, then write what you hear.', missingLetters: 'Missing letters in order', spellWhatYouHear: 'Word you heard',
       wordPattern: 'Word with gaps: {pattern}', assembledWord: 'Your assembled word', selectTiles: 'Choose letters below',
       removeTile: 'Remove {letter}', availableTiles: 'Available letters', addTile: 'Add {letter}', clearTiles: 'Clear',
-      trySpellingAgain: 'Not quite. Try once more.'
+      trySpellingAgain: 'Not quite. Try once more.',
+      letterGuess: 'Letter guess', wordSearch: 'Word search', needGuessWords: 'Add distinct single words of 3–10 letters in the answer language.',
+      needLatinWordSearch: 'Word search supports English, Polish, and German answer words. Choose another answer language.',
+      needWordSearch: 'Add at least three distinct single words of 3–8 letters in the answer language.',
+      guessPattern: 'Word: {pattern}', guessesLeft: 'Mistakes remaining: {count}', guessLetters: 'Letters to choose',
+      guessLetter: 'Guess {letter}', letterFound: 'That letter is in the word.', letterNotInWord: 'That letter is not in the word.',
+      wordSearchPrompt: 'Find the listed words. Select their first and last letters; use arrow keys to move in the grid.',
+      wordsFound: '{count} of {total} words found', foundWord: 'Found: {word}', wordSearchGrid: 'Word search grid',
+      gridCell: 'Row {row}, column {col}: {letter}', chooseEndCell: 'Now select the last letter.',
+      tryAnotherPath: 'That path is not a listed word. Try again.'
     },
     pl: {
       skip: 'Przejdź do treści', interfaceLanguage: 'Język interfejsu', yourCollection: 'Twoja kolekcja', lessons: 'Lekcje', newLesson: 'Nowa lekcja',
@@ -101,7 +110,16 @@
       listenTypePrompt: 'Posłuchaj i napisz to, co słyszysz.', missingLetters: 'Brakujące litery po kolei', spellWhatYouHear: 'Usłyszane słowo',
       wordPattern: 'Słowo z lukami: {pattern}', assembledWord: 'Ułożone słowo', selectTiles: 'Wybierz litery poniżej',
       removeTile: 'Usuń {letter}', availableTiles: 'Dostępne litery', addTile: 'Dodaj {letter}', clearTiles: 'Wyczyść',
-      trySpellingAgain: 'Jeszcze nie. Spróbuj ponownie.'
+      trySpellingAgain: 'Jeszcze nie. Spróbuj ponownie.',
+      letterGuess: 'Zgadnij literę', wordSearch: 'Wykreślanka', needGuessWords: 'Dodaj różne pojedyncze słowa z 3–10 literami w języku odpowiedzi.',
+      needLatinWordSearch: 'Wykreślanka obsługuje słowa angielskie, polskie i niemieckie. Wybierz inny język odpowiedzi.',
+      needWordSearch: 'Dodaj co najmniej trzy różne pojedyncze słowa z 3–8 literami w języku odpowiedzi.',
+      guessPattern: 'Słowo: {pattern}', guessesLeft: 'Pozostałe pomyłki: {count}', guessLetters: 'Litery do wyboru',
+      guessLetter: 'Zgadnij {letter}', letterFound: 'Ta litera jest w słowie.', letterNotInWord: 'Tej litery nie ma w słowie.',
+      wordSearchPrompt: 'Znajdź podane słowa. Wybierz pierwszą i ostatnią literę; strzałkami poruszaj się po siatce.',
+      wordsFound: 'Znaleziono {count} z {total} słów', foundWord: 'Znaleziono: {word}', wordSearchGrid: 'Siatka wykreślanki',
+      gridCell: 'Wiersz {row}, kolumna {col}: {letter}', chooseEndCell: 'Teraz wybierz ostatnią literę.',
+      tryAnotherPath: 'Ta ścieżka nie tworzy słowa z listy. Spróbuj ponownie.'
     },
     ar: {
       skip: 'انتقل إلى المحتوى', interfaceLanguage: 'لغة الواجهة', yourCollection: 'مجموعتك', lessons: 'الدروس', newLesson: 'درس جديد',
@@ -152,7 +170,16 @@
       listenTypePrompt: 'استمع ثم اكتب ما تسمعه.', missingLetters: 'الحروف الناقصة بالترتيب', spellWhatYouHear: 'الكلمة التي سمعتها',
       wordPattern: 'الكلمة مع الفراغات: {pattern}', assembledWord: 'الكلمة التي ركّبتها', selectTiles: 'اختر الحروف من الأسفل',
       removeTile: 'إزالة {letter}', availableTiles: 'الحروف المتاحة', addTile: 'إضافة {letter}', clearTiles: 'امسح',
-      trySpellingAgain: 'ليست صحيحة بعد. حاول مرة أخرى.'
+      trySpellingAgain: 'ليست صحيحة بعد. حاول مرة أخرى.',
+      letterGuess: 'تخمين الحروف', wordSearch: 'البحث عن الكلمات', needGuessWords: 'أضف كلمات مفردة ومختلفة من ٣ إلى ١٠ أحرف بلغة الإجابة.',
+      needLatinWordSearch: 'يدعم البحث عن الكلمات الإجابات الإنجليزية والبولندية والألمانية. اختر لغة إجابة أخرى.',
+      needWordSearch: 'أضف ثلاث كلمات مفردة ومختلفة على الأقل من ٣ إلى ٨ أحرف بلغة الإجابة.',
+      guessPattern: 'الكلمة: {pattern}', guessesLeft: 'الأخطاء المتبقية: {count}', guessLetters: 'الحروف المتاحة للتخمين',
+      guessLetter: 'خمّن {letter}', letterFound: 'هذا الحرف موجود في الكلمة.', letterNotInWord: 'هذا الحرف غير موجود في الكلمة.',
+      wordSearchPrompt: 'ابحث عن الكلمات المعروضة. اختر أول حرف وآخر حرف؛ استخدم الأسهم للتنقل في الشبكة.',
+      wordsFound: 'عُثر على {count} من {total} كلمات', foundWord: 'عُثر على: {word}', wordSearchGrid: 'شبكة البحث عن الكلمات',
+      gridCell: 'الصف {row}، العمود {col}: {letter}', chooseEndCell: 'اختر الآن الحرف الأخير.',
+      tryAnotherPath: 'هذا المسار لا يشكّل كلمة من القائمة. حاول مرة أخرى.'
     },
     de: {
       skip: 'Zum Inhalt springen', interfaceLanguage: 'Sprache der Oberfläche', yourCollection: 'Deine Sammlung', lessons: 'Lektionen', newLesson: 'Neue Lektion',
@@ -203,7 +230,16 @@
       listenTypePrompt: 'Höre zu und schreibe, was du hörst.', missingLetters: 'Fehlende Buchstaben in Reihenfolge', spellWhatYouHear: 'Gehörtes Wort',
       wordPattern: 'Wort mit Lücken: {pattern}', assembledWord: 'Dein zusammengesetztes Wort', selectTiles: 'Wähle unten Buchstaben aus',
       removeTile: '{letter} entfernen', availableTiles: 'Verfügbare Buchstaben', addTile: '{letter} hinzufügen', clearTiles: 'Leeren',
-      trySpellingAgain: 'Noch nicht richtig. Versuche es noch einmal.'
+      trySpellingAgain: 'Noch nicht richtig. Versuche es noch einmal.',
+      letterGuess: 'Buchstaben raten', wordSearch: 'Wortsuche', needGuessWords: 'Füge verschiedene einzelne Wörter mit 3–10 Buchstaben in der Antwortsprache hinzu.',
+      needLatinWordSearch: 'Die Wortsuche unterstützt englische, polnische und deutsche Antwortwörter. Wähle eine andere Antwortsprache.',
+      needWordSearch: 'Füge mindestens drei verschiedene einzelne Wörter mit 3–8 Buchstaben in der Antwortsprache hinzu.',
+      guessPattern: 'Wort: {pattern}', guessesLeft: 'Verbleibende Fehler: {count}', guessLetters: 'Buchstaben zur Auswahl',
+      guessLetter: '{letter} raten', letterFound: 'Dieser Buchstabe ist im Wort.', letterNotInWord: 'Dieser Buchstabe ist nicht im Wort.',
+      wordSearchPrompt: 'Finde die genannten Wörter. Wähle Anfangs- und Endbuchstaben; bewege dich mit den Pfeiltasten im Gitter.',
+      wordsFound: '{count} von {total} Wörtern gefunden', foundWord: 'Gefunden: {word}', wordSearchGrid: 'Wortsuchgitter',
+      gridCell: 'Zeile {row}, Spalte {col}: {letter}', chooseEndCell: 'Wähle jetzt den letzten Buchstaben.',
+      tryAnotherPath: 'Dieser Pfad ergibt kein Wort aus der Liste. Versuche es erneut.'
     }
   };
   root.WordsI18n = { strings, languageNames: { en: 'english', pl: 'polish', ar: 'arabic', de: 'german' } };

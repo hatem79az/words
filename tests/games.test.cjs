@@ -110,3 +110,41 @@ test('new spelling modes use unique words and answer-language recordings', () =>
   assert.deepEqual(games.listeningTypingPairs(value, assets, 'en', 'pl').map(item => item.terms.pl), ['ąla']);
   assert.equal(games.readiness(value, 'en', 'pl', assets).listenType, 1);
 });
+
+test('letter guess keeps marked graphemes and offers each target letter', () => {
+  const clusters = games.spellingClusters('كِتاب', 'ar');
+  const options = games.guessOptions(clusters, 'ar', () => 0);
+  assert.ok(options.includes('كِ'));
+  assert.ok(options.includes('ت'));
+  assert.equal(new Set(options).size, options.length);
+  assert.ok(options.length <= 20);
+  assert.equal(games.sameAnswer('ك', 'كِ', 'ar'), false);
+});
+
+test('word search always places solvable Polish words, including fallback layout', () => {
+  const value = lesson(5);
+  ['kot', 'pies', 'żółw', 'dom', 'łódź'].forEach((word, index) => { value.items[index].terms.pl = word; });
+  const items = games.wordSearchPairs(value, 'en', 'pl');
+  const generated = games.generateWordSearch(items, 'pl', () => 0);
+  assert.equal(generated.placements.length, 5);
+  for (const placement of generated.placements) {
+    const word = items.find(item => item.id === placement.id).terms.pl;
+    const path = games.gridPath(placement.cells[0], placement.cells.at(-1));
+    assert.deepEqual(path, placement.cells);
+    assert.equal(path.map(({ row, col }) => generated.grid[row][col]).join(''), games.answerKey(word, 'pl'));
+  }
+  assert.deepEqual(games.gridPath({ row: 0, col: 0 }, { row: 2, col: 2 }), []);
+  assert.equal(games.readiness(value, 'en', 'pl').wordSearch, 5);
+  assert.equal(games.readiness(value, 'en', 'ar').wordSearch, 0);
+});
+
+test('word search and letter guess skip long or ambiguous terms', () => {
+  const value = lesson(4);
+  value.items[0].terms.de = 'Straße';
+  value.items[1].terms.de = 'überraschung';
+  value.items[2].terms.de = 'Straße';
+  value.items[3].terms.de = 'Bär';
+  assert.deepEqual(games.spellingPairs(value, 'en', 'de', 'guess').map(item => item.terms.de), ['Bär']);
+  assert.equal(games.wordSearchPairs(value, 'en', 'de').length, 1);
+  assert.equal(games.readiness(value, 'en', 'de').wordSearch, 0);
+});

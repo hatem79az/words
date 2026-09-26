@@ -412,6 +412,9 @@
     if (mode === 'picture') return 'needPictures';
     if (mode === 'listening') return 'needAudio';
     if (mode === 'listenType') return 'needRecordedAnswers';
+    if (mode === 'wordSearch') return !games.hasGraphemeSupport() ? 'needGraphemeSupport'
+      : byId('back-language').value === 'ar' ? 'needLatinWordSearch' : 'needWordSearch';
+    if (mode === 'guess') return games.hasGraphemeSupport() ? 'needGuessWords' : 'needGraphemeSupport';
     if (mode === 'tiles' || mode === 'missing') return games.hasGraphemeSupport() ? 'needSpellingWords' : 'needGraphemeSupport';
     if (mode === 'quiz' || mode === 'matching') return 'needFour';
     return 'noCards';
@@ -427,15 +430,21 @@
     const items = mode === 'picture' || mode === 'listening'
       ? games.mediaPairs(lesson, collection.assets, front, back, mode)
       : mode === 'listenType' ? games.listeningTypingPairs(lesson, collection.assets, front, back)
-      : mode === 'tiles' || mode === 'missing' ? games.spellingPairs(lesson, front, back, mode)
+      : mode === 'wordSearch' ? games.wordSearchPairs(lesson, front, back)
+      : ['tiles', 'missing', 'guess'].includes(mode) ? games.spellingPairs(lesson, front, back, mode)
       : games.eligiblePairs(lesson, front, back, true);
     if (['quiz', 'matching', 'picture', 'listening'].includes(mode) && items.length < 4) {
       byId('practice-message').textContent = t(mode === 'picture' ? 'needPictures' : mode === 'listening' ? 'needAudio' : 'needFour'); return;
     }
+    if (mode === 'wordSearch' && items.length < 3) { byId('practice-message').textContent = t(unavailableReason(mode)); return; }
     if (!items.length) { byId('practice-message').textContent = t(unavailableReason(mode)); return; }
-    challenge = { mode, front, back, items: games.shuffle(items), index: 0, score: 0, locked: false,
+    const selected = games.shuffle(items).slice(0, mode === 'wordSearch' ? 5 : items.length);
+    challenge = { mode, front, back, items: selected, index: 0, score: 0, locked: false,
       rounds: mode === 'matching' ? games.matchingRounds(items) : [], roundIndex: 0,
       matched: new Set(), selectedFront: null, selectedBack: null, attempts: 0, attemptsThisItem: 0 };
+    if (mode === 'wordSearch') challenge.search = {
+      ...games.generateWordSearch(selected, back), found: new Set(), foundCells: new Set(), start: null, active: { row: 0, col: 0 }
+    };
     byId('challenge-area').hidden = false;
     renderChallenge();
   }
@@ -465,6 +474,13 @@
     answerLabel.textContent = t(answerLabel.dataset.i18n);
     byId('challenge-score').textContent = t('score', { score: state.score });
     if (state.mode === 'matching') { renderMatching(); return; }
+    if (state.mode === 'wordSearch') {
+      byId('challenge-prompt').textContent = t('wordSearchPrompt');
+      byId('challenge-prompt').removeAttribute('lang'); byId('challenge-prompt').removeAttribute('dir');
+      options.classList.add('word-search-options');
+      renderWordSearch();
+      return;
+    }
     byId('challenge-progress').textContent = t('cardCount', { current: state.index + 1, total: state.items.length });
     byId('challenge-meter').max = state.items.length;
     byId('challenge-meter').value = state.index + 1;
@@ -498,6 +514,14 @@
       state.tileSelection = [];
       options.classList.add('tile-options');
       renderTiles();
+    } else if (state.mode === 'guess') {
+      state.guess = {
+        clusters: games.spellingClusters(item.terms[state.back], state.back),
+        guessed: new Set(), mistakes: 0
+      };
+      state.guess.options = games.guessOptions(state.guess.clusters, state.back);
+      options.classList.add('guess-options');
+      renderGuess();
     } else {
       if (state.mode === 'missing') {
         state.missing = games.missingPlan(games.spellingClusters(item.terms[state.back], state.back));
@@ -574,6 +598,152 @@
       : focusTile === null ? tray.querySelector('button:not(:disabled)')
       : [...tray.querySelectorAll('button')].find(button => button.dataset.tileId === String(focusTile));
     if (focus && !focus.disabled) focus.focus();
+  }
+
+  function renderGuess() {
+    const state = challenge;
+    if (!state || state.mode !== 'guess') return;
+    const { clusters, guessed, mistakes } = state.guess;
+    const options = byId('challenge-options');
+    options.replaceChildren();
+    const pattern = document.createElement('div'); pattern.className = 'guess-pattern';
+    const revealed = clusters.map(letter => state.locked && mistakes >= 6 || guessed.has(games.answerKey(letter, state.back)) ? letter : '□').join('');
+    setTerm(pattern, revealed, state.back);
+    pattern.setAttribute('role', 'img'); pattern.setAttribute('aria-label', t('guessPattern', { pattern: revealed }));
+    const remaining = document.createElement('p'); remaining.className = 'guess-remaining';
+    remaining.textContent = t('guessesLeft', { count: 6 - mistakes });
+    const keyboard = document.createElement('div'); keyboard.className = 'guess-keyboard';
+    keyboard.lang = state.back; keyboard.dir = state.back === 'ar' ? 'rtl' : 'ltr';
+    keyboard.setAttribute('role', 'group'); keyboard.setAttribute('aria-label', t('guessLetters'));
+    const targetKeys = new Set(clusters.map(letter => games.answerKey(letter, state.back)));
+    for (const letter of state.guess.options) {
+      const button = document.createElement('button'); button.type = 'button'; button.className = 'guess-key';
+      button.dataset.guessKey = letter;
+      setTerm(button, letter, state.back);
+      button.setAttribute('aria-label', t('guessLetter', { letter }));
+      if (guessed.has(letter)) button.classList.add(targetKeys.has(letter) ? 'correct' : 'wrong');
+      button.disabled = state.locked || guessed.has(letter);
+      button.addEventListener('click', () => chooseGuess(letter));
+      keyboard.append(button);
+    }
+    options.append(pattern, remaining, keyboard);
+    if (!state.locked) keyboard.querySelector('button:not(:disabled)')?.focus();
+  }
+
+  function chooseGuess(letter) {
+    const state = challenge;
+    if (!state || state.mode !== 'guess' || state.locked || state.guess.guessed.has(letter)) return;
+    const guess = state.guess;
+    guess.guessed.add(letter);
+    const targetKeys = guess.clusters.map(cluster => games.answerKey(cluster, state.back));
+    const present = targetKeys.includes(letter);
+    if (!present) guess.mistakes += 1;
+    const solved = targetKeys.every(key => guess.guessed.has(key));
+    const lost = guess.mistakes >= 6;
+    if (solved) { state.score += 1; state.locked = true; }
+    else if (lost) state.locked = true;
+    renderGuess();
+    const output = byId('challenge-feedback');
+    output.className = `challenge-feedback ${present ? 'positive' : 'negative'}`;
+    output.textContent = solved ? t('correct') : lost
+      ? t('correctAnswer', { answer: state.items[state.index].terms[state.back] })
+      : t(present ? 'letterFound' : 'letterNotInWord');
+    effects.play(present ? 'correct' : 'wrong');
+    effects.animate(byId('challenge-options').querySelector('.guess-pattern'), present ? 'correct' : 'wrong');
+    byId('challenge-score').textContent = t('score', { score: state.score });
+    if (state.locked) prepareNext();
+  }
+
+  function renderWordSearch(focusCell = null) {
+    const state = challenge;
+    if (!state || state.mode !== 'wordSearch') return;
+    const search = state.search;
+    const options = byId('challenge-options');
+    const previousScroll = options.querySelector('.search-scroll')?.scrollLeft || 0;
+    options.replaceChildren();
+    byId('challenge-progress').textContent = t('wordsFound', { count: search.found.size, total: state.items.length });
+    byId('challenge-meter').max = state.items.length;
+    byId('challenge-meter').value = search.found.size;
+    const list = document.createElement('ul'); list.className = 'search-word-list';
+    for (const item of state.items) {
+      const entry = document.createElement('li'); entry.className = search.found.has(item.id) ? 'found' : '';
+      setTerm(entry, item.terms[state.back], state.back);
+      if (search.found.has(item.id)) entry.setAttribute('aria-label', t('foundWord', { word: item.terms[state.back] }));
+      list.append(entry);
+    }
+    const scroll = document.createElement('div'); scroll.className = 'search-scroll';
+    const grid = document.createElement('div'); grid.className = 'search-grid';
+    grid.style.setProperty('--grid-size', String(search.grid.length));
+    grid.setAttribute('role', 'group'); grid.setAttribute('aria-label', t('wordSearchGrid'));
+    const active = focusCell || search.active;
+    for (let row = 0; row < search.grid.length; row += 1) for (let col = 0; col < search.grid.length; col += 1) {
+      const button = document.createElement('button'); button.type = 'button'; button.className = 'search-cell';
+      const letter = search.grid[row][col]; const key = `${row},${col}`;
+      setTerm(button, letter, state.back);
+      button.dataset.row = String(row); button.dataset.col = String(col);
+      button.setAttribute('aria-label', t('gridCell', { letter, row: row + 1, col: col + 1 }));
+      button.tabIndex = active.row === row && active.col === col ? 0 : -1;
+      if (search.foundCells.has(key)) button.classList.add('found');
+      if (search.start?.row === row && search.start?.col === col) button.classList.add('selected');
+      button.disabled = state.locked;
+      button.addEventListener('click', () => chooseSearchCell({ row, col }));
+      button.addEventListener('keydown', event => {
+        const move = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] }[event.key];
+        if (!move) return;
+        event.preventDefault();
+        const nextRow = Math.max(0, Math.min(search.grid.length - 1, row + move[0]));
+        const nextCol = Math.max(0, Math.min(search.grid.length - 1, col + move[1]));
+        search.active = { row: nextRow, col: nextCol };
+        button.tabIndex = -1;
+        const next = grid.querySelector(`[data-row="${nextRow}"][data-col="${nextCol}"]`);
+        next.tabIndex = 0; next.focus();
+      });
+      grid.append(button);
+    }
+    scroll.append(grid); options.append(list, scroll);
+    scroll.scrollLeft = previousScroll;
+    if (focusCell && !state.locked) {
+      search.active = focusCell;
+      grid.querySelector(`[data-row="${focusCell.row}"][data-col="${focusCell.col}"]`)?.focus();
+    } else if (!state.locked) grid.querySelector('[tabindex="0"]')?.focus();
+  }
+
+  function chooseSearchCell(cell) {
+    const state = challenge;
+    if (!state || state.mode !== 'wordSearch' || state.locked) return;
+    const search = state.search;
+    search.active = cell;
+    if (!search.start) {
+      search.start = cell;
+      renderWordSearch(cell);
+      byId('challenge-feedback').className = 'challenge-feedback';
+      byId('challenge-feedback').textContent = t('chooseEndCell');
+      return;
+    }
+    const path = games.gridPath(search.start, cell);
+    search.start = null;
+    const letters = path.map(({ row, col }) => search.grid[row][col]).join('');
+    const reverse = [...path].reverse().map(({ row, col }) => search.grid[row][col]).join('');
+    const item = state.items.find(candidate => !search.found.has(candidate.id) &&
+      (games.sameAnswer(letters, candidate.terms[state.back], state.back) ||
+       games.sameAnswer(reverse, candidate.terms[state.back], state.back)));
+    if (item) {
+      search.found.add(item.id);
+      for (const { row, col } of path) search.foundCells.add(`${row},${col}`);
+      state.score += 1;
+    }
+    if (search.found.size === state.items.length) state.locked = true;
+    renderWordSearch(cell);
+    const output = byId('challenge-feedback');
+    output.className = `challenge-feedback ${item ? 'positive' : 'negative'}`;
+    output.textContent = item ? t('foundWord', { word: item.terms[state.back] }) : t('tryAnotherPath');
+    effects.play(item ? 'correct' : 'wrong');
+    byId('challenge-score').textContent = t('score', { score: state.score });
+    if (state.locked) {
+      byId('challenge-next').hidden = false;
+      byId('challenge-next').textContent = t('seeResults');
+      byId('challenge-next').focus();
+    }
   }
 
   function clearSpellingFeedback() {
@@ -710,6 +880,7 @@
     const state = challenge;
     if (!state) return;
     media.stop();
+    if (state.mode === 'wordSearch') { finishChallenge(); return; }
     if (state.mode === 'matching') {
       if (state.roundIndex === state.rounds.length - 1) { finishChallenge(); return; }
       state.roundIndex += 1;
@@ -770,6 +941,14 @@
       effects.setMuted(!effects.isMuted()); updateSoundButton();
     });
     byId('typing-form').addEventListener('submit', answerTyping);
+    byId('challenge-area').addEventListener('keydown', event => {
+      if (!challenge || challenge.mode !== 'guess' || challenge.locked || event.altKey || event.ctrlKey || event.metaKey ||
+          ['INPUT', 'SELECT', 'TEXTAREA'].includes(event.target.tagName)) return;
+      const letter = games.answerKey(event.key, challenge.back);
+      const button = [...byId('challenge-options').querySelectorAll('[data-guess-key]')]
+        .find(candidate => candidate.dataset.guessKey === letter && !candidate.disabled);
+      if (button) { event.preventDefault(); button.click(); }
+    });
     byId('challenge-next').addEventListener('click', nextChallenge);
     byId('reveal-card').addEventListener('click', revealCard);
     byId('next-card').addEventListener('click', nextCard);
