@@ -96,7 +96,11 @@
       sentenceOrder: 'Sentence order', needSentenceOrder: 'Add a three-chunk example in both selected languages for at least one word. Make target chunks reorderable and examples distinct.',
       sentenceOrderPrompt: 'Arrange the answer-language chunks to match the example.', assembledSentence: 'Your assembled sentence',
       selectSentenceChunks: 'Choose chunks below', availableSentenceChunks: 'Available sentence chunks',
-      removeSentenceChunk: 'Remove {chunk}', addSentenceChunk: 'Add {chunk}', clearSentence: 'Clear', sentenceAnswerLabel: 'Correct sentence:'
+      removeSentenceChunk: 'Remove {chunk}', addSentenceChunk: 'Add {chunk}', clearSentence: 'Clear', sentenceAnswerLabel: 'Correct sentence:',
+      gapInExample: 'Gap in example', noGap: 'No gap', gapHint: 'Choose the chunk learners will type. The selected chunk is the approved answer; add an example in the clue language too.',
+      invalidCompletions: 'Choose an existing word or phrase chunk for each gap. If you change the example, check its gap selection.',
+      sentenceCompletion: 'Complete the sentence', needSentenceCompletion: 'Add examples in both selected languages and choose an answer-language gap for at least one word. Questions must be distinct.',
+      completionAnswer: 'Missing word or phrase', completionBlank: 'Missing word or phrase', completionAnswerLabel: 'Correct answer:'
     },
     pl: {
       skip: 'Przejdź do treści', interfaceLanguage: 'Język interfejsu', yourCollection: 'Twoja kolekcja', lessons: 'Lekcje', newLesson: 'Nowa lekcja',
@@ -193,7 +197,11 @@
       sentenceOrder: 'Układanie zdania', needSentenceOrder: 'Dodaj przykład z trzema częściami w obu wybranych językach dla co najmniej jednego słowa. Części odpowiedzi muszą dać się przestawić, a przykłady być różne.',
       sentenceOrderPrompt: 'Ułóż części zdania w języku odpowiedzi na podstawie przykładu.', assembledSentence: 'Ułożone zdanie',
       selectSentenceChunks: 'Wybierz części poniżej', availableSentenceChunks: 'Dostępne części zdania',
-      removeSentenceChunk: 'Usuń {chunk}', addSentenceChunk: 'Dodaj {chunk}', clearSentence: 'Wyczyść', sentenceAnswerLabel: 'Poprawne zdanie:'
+      removeSentenceChunk: 'Usuń {chunk}', addSentenceChunk: 'Dodaj {chunk}', clearSentence: 'Wyczyść', sentenceAnswerLabel: 'Poprawne zdanie:',
+      gapInExample: 'Luka w przykładzie', noGap: 'Bez luki', gapHint: 'Wybierz część, którą uczeń wpisze. Wybrana część jest zatwierdzoną odpowiedzią; dodaj też przykład w języku wskazówki.',
+      invalidCompletions: 'Wybierz istniejące słowo lub fragment dla każdej luki. Po zmianie przykładu sprawdź wybraną lukę.',
+      sentenceCompletion: 'Uzupełnij zdanie', needSentenceCompletion: 'Dodaj przykłady w obu wybranych językach i wybierz lukę w języku odpowiedzi dla co najmniej jednego słowa. Pytania muszą być różne.',
+      completionAnswer: 'Brakujące słowo lub zwrot', completionBlank: 'Brakujące słowo lub zwrot', completionAnswerLabel: 'Poprawna odpowiedź:'
     },
     ar: {
       skip: 'انتقل إلى المحتوى', interfaceLanguage: 'لغة الواجهة', yourCollection: 'مجموعتك', lessons: 'الدروس', newLesson: 'درس جديد',
@@ -290,7 +298,11 @@
       sentenceOrder: 'ترتيب الجملة', needSentenceOrder: 'أضف مثالًا من ثلاثة مقاطع في كلتا اللغتين المختارتين لكلمة واحدة على الأقل، مع مقاطع إجابة قابلة لإعادة الترتيب وأمثلة غير مكررة.',
       sentenceOrderPrompt: 'رتّب مقاطع لغة الإجابة لتطابق المثال.', assembledSentence: 'الجملة التي رتّبتها',
       selectSentenceChunks: 'اختر المقاطع أدناه', availableSentenceChunks: 'مقاطع الجملة المتاحة',
-      removeSentenceChunk: 'إزالة {chunk}', addSentenceChunk: 'إضافة {chunk}', clearSentence: 'مسح', sentenceAnswerLabel: 'الجملة الصحيحة:'
+      removeSentenceChunk: 'إزالة {chunk}', addSentenceChunk: 'إضافة {chunk}', clearSentence: 'مسح', sentenceAnswerLabel: 'الجملة الصحيحة:',
+      gapInExample: 'الفراغ في المثال', noGap: 'بلا فراغ', gapHint: 'اختر المقطع الذي سيكتبه المتعلّم. المقطع المختار هو الإجابة المعتمدة؛ أضف مثالًا بلغة التلميح أيضًا.',
+      invalidCompletions: 'اختر كلمة أو عبارة موجودة لكل فراغ. بعد تعديل المثال تحقّق من موضع الفراغ.',
+      sentenceCompletion: 'أكمل الجملة', needSentenceCompletion: 'أضف مثالًا بكلتا اللغتين المختارتين وحدّد فراغًا بلغة الإجابة لكلمة واحدة على الأقل. يجب أن تكون الأسئلة مختلفة.',
+      completionAnswer: 'الكلمة أو العبارة الناقصة', completionBlank: 'كلمة أو عبارة ناقصة', completionAnswerLabel: 'الإجابة الصحيحة:'
     },
     de: {
       skip: 'Zum Inhalt springen', interfaceLanguage: 'Sprache der Oberfläche', yourCollection: 'Deine Sammlung', lessons: 'Lektionen', newLesson: 'Neue Lektion',
@@ -387,7 +399,11 @@
       sentenceOrder: 'Satz ordnen', needSentenceOrder: 'Füge für mindestens ein Wort in beiden gewählten Sprachen einen Satz aus drei Teilen hinzu. Die Antwortteile müssen umstellbar und die Beispiele eindeutig sein.',
       sentenceOrderPrompt: 'Ordne die Teile in der Antwortsprache passend zum Beispiel.', assembledSentence: 'Dein zusammengesetzter Satz',
       selectSentenceChunks: 'Wähle unten Satzteile', availableSentenceChunks: 'Verfügbare Satzteile',
-      removeSentenceChunk: '{chunk} entfernen', addSentenceChunk: '{chunk} hinzufügen', clearSentence: 'Leeren', sentenceAnswerLabel: 'Richtiger Satz:'
+      removeSentenceChunk: '{chunk} entfernen', addSentenceChunk: '{chunk} hinzufügen', clearSentence: 'Leeren', sentenceAnswerLabel: 'Richtiger Satz:',
+      gapInExample: 'Lücke im Beispiel', noGap: 'Keine Lücke', gapHint: 'Wähle den Teil, den Lernende eintippen. Dieser Teil ist die bestätigte Antwort; ergänze auch ein Beispiel in der Hinweissprache.',
+      invalidCompletions: 'Wähle für jede Lücke ein vorhandenes Wort oder einen Satzteil. Prüfe nach Änderungen am Beispiel die Lückenauswahl.',
+      sentenceCompletion: 'Satz ergänzen', needSentenceCompletion: 'Füge Beispiele in beiden gewählten Sprachen hinzu und wähle für mindestens ein Wort eine Lücke in der Antwortsprache. Die Aufgaben müssen eindeutig sein.',
+      completionAnswer: 'Fehlendes Wort oder Wendung', completionBlank: 'Fehlendes Wort oder Wendung', completionAnswerLabel: 'Richtige Antwort:'
     }
   };
   root.WordsI18n = { strings, languageNames: { en: 'english', pl: 'polish', ar: 'arabic', de: 'german' } };

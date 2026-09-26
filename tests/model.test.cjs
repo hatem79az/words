@@ -45,14 +45,15 @@ test('invalid imports are rejected before they replace existing lessons', () => 
   assert.equal(valid.lessons[0].items[0].terms.pl, 'kot');
 });
 
-test('old text-only exports migrate to version 5 without losing terms', () => {
+test('old text-only exports migrate to version 6 without losing terms', () => {
   const oldLesson = lesson();
-  oldLesson.items.forEach(item => { item.media = { image: null, audio: null }; });
+  oldLesson.items.forEach(item => { item.media = { image: null, audio: null }; delete item.completionGaps; });
   const upgraded = model.validateCollection({ schemaVersion: 1, lessons: [oldLesson] });
-  assert.equal(upgraded.schemaVersion, 5);
+  assert.equal(upgraded.schemaVersion, 6);
   assert.deepEqual(upgraded.lessons[0].categories, []);
   assert.equal(upgraded.lessons[0].items[0].categoryId, null);
   assert.deepEqual(upgraded.lessons[0].items[0].sentences.en, []);
+  assert.deepEqual(upgraded.lessons[0].items[0].completionGaps, { en: null, pl: null, ar: null, de: null });
   assert.deepEqual(upgraded.assets, {});
   assert.equal(upgraded.lessons[0].items[0].terms.ar, 'قطة');
   assert.deepEqual(upgraded.lessons[0].items[0].media.audio, {});
@@ -84,7 +85,7 @@ test('picture markers survive save, export, older import, and duplicate with rem
   ];
   const assets = { scene: { mime: 'image/webp', data: 'data:image/webp;base64,UklGRg==' } };
   const saved = model.saveLesson(model.newCollection(), value, assets);
-  assert.equal(saved.schemaVersion, 5);
+  assert.equal(saved.schemaVersion, 6);
   assert.deepEqual(model.validateCollection(JSON.parse(JSON.stringify(saved))), saved);
   const copy = model.duplicateLesson(saved.lessons[0]);
   assert.deepEqual(copy.items[0].media.hotspots.map(point => point.itemId), [copy.items[1].id, copy.items[2].id]);
@@ -93,7 +94,7 @@ test('picture markers survive save, export, older import, and duplicate with rem
   previous.schemaVersion = 2;
   previous.lessons[0].items.forEach(item => { delete item.media.hotspots; });
   const migrated = model.validateCollection(previous);
-  assert.equal(migrated.schemaVersion, 5);
+  assert.equal(migrated.schemaVersion, 6);
   assert.deepEqual(migrated.lessons[0].items[0].media.hotspots, []);
 });
 
@@ -162,6 +163,44 @@ test('sentence chunks reject incomplete, empty, overly long, and delimiter conte
   assert.throws(() => model.validateLesson(value), /invalidSentences/);
   value.items[0].sentences.en[1] = 'see';
   assert.deepEqual(model.validateLesson(value).items[0].sentences.en, ['I', 'see', 'a cat.']);
+});
+
+test('completion gap and approved chunk survive export, duplicate, and version 5 migration', () => {
+  const value = lesson();
+  value.items[0].sentences.en = ['I', 'see', 'a cat.'];
+  value.items[0].sentences.pl = ['Widzę', 'małego', 'kota.'];
+  value.items[0].sentences.ar = ['أنا', 'أرى', 'قطة.'];
+  value.items[0].completionGaps.pl = 2;
+  value.items[0].completionGaps.ar = 1;
+  const saved = model.saveLesson(model.newCollection(), value);
+  const imported = model.validateCollection(JSON.parse(JSON.stringify(saved)));
+  assert.deepEqual(imported, saved);
+  assert.equal(imported.lessons[0].items[0].sentences.pl[imported.lessons[0].items[0].completionGaps.pl], 'kota.');
+  const copy = model.duplicateLesson(saved.lessons[0]);
+  copy.items[0].completionGaps.pl = 1;
+  copy.items[0].sentences.pl[1] = 'dużego';
+  assert.equal(saved.lessons[0].items[0].completionGaps.pl, 2);
+  assert.equal(saved.lessons[0].items[0].sentences.pl[1], 'małego');
+  const previous = structuredClone(saved); previous.schemaVersion = 5;
+  previous.lessons[0].items.forEach(item => { delete item.completionGaps; });
+  const migrated = model.validateCollection(previous);
+  assert.deepEqual(migrated.lessons[0].items[0].completionGaps, { en: null, pl: null, ar: null, de: null });
+  assert.deepEqual(migrated.lessons[0].items[0].sentences.pl, ['Widzę', 'małego', 'kota.']);
+});
+
+test('completion gap rejects missing sentence, invalid index, and punctuation-only answer', () => {
+  const value = lesson();
+  value.items[0].completionGaps.pl = 0;
+  assert.throws(() => model.validateLesson(value), /invalidCompletions/);
+  value.items[0].sentences.pl = ['Widzę', 'małego', 'kota.'];
+  value.items[0].completionGaps.pl = 3;
+  assert.throws(() => model.validateLesson(value), /invalidCompletions/);
+  value.items[0].completionGaps.pl = '1';
+  assert.throws(() => model.validateLesson(value), /invalidCompletions/);
+  value.items[0].sentences.pl[1] = '...'; value.items[0].completionGaps.pl = 1;
+  assert.throws(() => model.validateLesson(value), /invalidCompletions/);
+  value.items[0].sentences.pl[1] = 'małego';
+  assert.equal(model.validateLesson(value).items[0].completionGaps.pl, 1);
 });
 
 test('picture markers reject missing images, broken references, overlapping or invalid positions', () => {

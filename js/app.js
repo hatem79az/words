@@ -38,7 +38,10 @@
     byId('ui-language').setAttribute('aria-label', t('interfaceLanguage'));
     if (draft) byId('editor-title').textContent = draft.title || t('newLesson');
     updateSoundButton();
-    for (const row of byId('item-list').children) refreshMediaRow(row);
+    for (const row of byId('item-list').children) {
+      refreshMediaRow(row);
+      for (const language of model.LANGUAGES) refreshCompletionSelect(row, language);
+    }
     refreshCategorySelects();
     renderReadiness();
     renderList();
@@ -120,6 +123,23 @@
     }
   }
 
+  function refreshCompletionSelect(row, language) {
+    const input = row.querySelector(`[data-sentence-language="${language}"]`);
+    const select = row.querySelector(`[data-completion-language="${language}"]`);
+    if (!input || !select) return;
+    const chosen = select.value || select.dataset.initialGap || '';
+    const chunks = input.value.trim() ? input.value.split('|').map(chunk => chunk.trim()) : [];
+    const options = [new Option(t('noGap'), '')];
+    if (chunks.length >= 3 && chunks.length <= 12 && chunks.every(Boolean)) {
+      chunks.forEach((chunk, index) => {
+        if (/[\p{L}\p{N}]/u.test(chunk)) options.push(new Option(`${index + 1}. ${chunk}`, String(index)));
+      });
+    }
+    select.replaceChildren(...options);
+    select.value = options.some(option => option.value === chosen) ? chosen : '';
+    delete select.dataset.initialGap;
+  }
+
   function makeItemRow(item) {
     const row = document.createElement('fieldset');
     row.className = 'item-row';
@@ -153,6 +173,7 @@
     const sentenceHint = document.createElement('p'); sentenceHint.className = 'muted'; sentenceHint.dataset.i18n = 'sentenceHint';
     sentenceHint.textContent = t('sentenceHint');
     const sentenceGrid = document.createElement('div'); sentenceGrid.className = 'term-grid';
+    const completionGrid = document.createElement('div'); completionGrid.className = 'completion-grid';
     for (const language of model.LANGUAGES) {
       const label = document.createElement('label');
       const name = document.createElement('span'); name.dataset.i18n = i18n.languageNames[language];
@@ -161,9 +182,20 @@
       input.value = (item.sentences?.[language] || []).join(' | ');
       input.dataset.sentenceLanguage = language; input.lang = language; input.dir = language === 'ar' ? 'rtl' : 'ltr';
       input.autocomplete = 'off';
+      input.addEventListener('input', () => refreshCompletionSelect(row, language));
       label.append(name, input); sentenceGrid.append(label);
+      const gapLabel = document.createElement('label');
+      const gapName = document.createElement('span'); gapName.dataset.i18n = 'gapInExample'; gapName.textContent = t('gapInExample');
+      const gapLanguage = document.createElement('span'); gapLanguage.dataset.i18n = i18n.languageNames[language];
+      gapLanguage.textContent = t(gapLanguage.dataset.i18n);
+      const gapSelect = document.createElement('select'); gapSelect.dataset.completionLanguage = language;
+      gapSelect.dataset.initialGap = item.completionGaps?.[language] == null ? '' : String(item.completionGaps[language]);
+      gapLabel.append(gapName, gapLanguage, gapSelect); completionGrid.append(gapLabel);
     }
-    sentenceBody.append(sentenceHint, sentenceGrid); sentenceEditor.append(sentenceSummary, sentenceBody);
+    const gapHint = document.createElement('p'); gapHint.className = 'muted completion-hint'; gapHint.dataset.i18n = 'gapHint';
+    gapHint.textContent = t('gapHint');
+    sentenceBody.append(sentenceHint, sentenceGrid, gapHint, completionGrid);
+    sentenceEditor.append(sentenceSummary, sentenceBody);
     const remove = document.createElement('button');
     remove.type = 'button'; remove.className = 'button button-quiet danger remove-item';
     remove.dataset.i18n = 'remove'; remove.textContent = t('remove');
@@ -235,6 +267,7 @@
     audioSlot.append(audioLabel, audioSelect, audioInput, audioList);
     content.append(picture, audioSlot); attachments.append(summary, content);
     row.append(grid, categoryLabel, sentenceEditor, attachments, remove);
+    for (const language of model.LANGUAGES) refreshCompletionSelect(row, language);
     refreshMediaRow(row);
     return row;
   }
@@ -442,8 +475,12 @@
       for (const input of row.querySelectorAll('[data-sentence-language]')) {
         sentences[input.dataset.sentenceLanguage] = input.value.trim() ? input.value.split('|').map(chunk => chunk.trim()) : [];
       }
+      const completionGaps = {};
+      for (const select of row.querySelectorAll('[data-completion-language]')) {
+        completionGaps[select.dataset.completionLanguage] = select.value === '' ? null : Number(select.value);
+      }
       return { id: row.dataset.id, terms, categoryId: row.querySelector('[data-category-select]').value || null,
-        sentences,
+        sentences, completionGaps,
         media: { image: row._media.image, audio: { ...row._media.audio },
         hotspots: row._media.hotspots.map(point => ({ ...point })) } };
     }).filter(item => Object.values(item.terms).some(term => term.trim()));
@@ -622,6 +659,7 @@
   function unavailableReason(mode) {
     if (mode === 'categorySort') return 'needCategorySort';
     if (mode === 'sentenceOrder') return 'needSentenceOrder';
+    if (mode === 'sentenceCompletion') return 'needSentenceCompletion';
     if (mode === 'picture') return 'needPictures';
     if (mode === 'pictureLabels') return 'needPictureLabels';
     if (mode === 'listening') return 'needAudio';
@@ -652,6 +690,7 @@
       : mode === 'crossword' ? games.crosswordPairs(lesson, front, back)
       : mode === 'categorySort' ? categoryPlan?.items || []
       : mode === 'sentenceOrder' ? games.sentenceOrderPairs(lesson, front, back)
+      : mode === 'sentenceCompletion' ? games.sentenceCompletionPairs(lesson, front, back)
       : ['tiles', 'missing', 'guess'].includes(mode) ? games.spellingPairs(lesson, front, back, mode)
       : games.eligiblePairs(lesson, front, back, true);
     if (['quiz', 'matching', 'memory', 'trueFalse', 'picture', 'listening'].includes(mode) && items.length < 4) {
@@ -665,7 +704,7 @@
     const selected = mode === 'crossword' ? puzzle.entries.map(entry => items.find(item => item.id === entry.id))
       : trueFalse ? trueFalse.map(round => round.item)
       : games.shuffle(items).slice(0, mode === 'wordSearch' ? 5 : mode === 'memory' ? 6 : mode === 'pictureLabels' ? 3
-        : mode === 'sentenceOrder' ? 10 : items.length);
+        : ['sentenceOrder', 'sentenceCompletion'].includes(mode) ? 10 : items.length);
     challenge = { mode, front, back, items: selected, index: 0, score: 0, locked: false,
       rounds: mode === 'matching' ? games.matchingRounds(items) : [], roundIndex: 0,
       matched: new Set(), selectedFront: null, selectedBack: null, attempts: 0, attemptsThisItem: 0 };
@@ -704,9 +743,10 @@
     byId('challenge-feedback').removeAttribute('lang'); byId('challenge-feedback').removeAttribute('dir');
     byId('challenge-next').hidden = true;
     byId('challenge-media').replaceChildren();
-    byId('typing-form').hidden = !['typing', 'missing', 'listenType'].includes(state.mode);
+    byId('typing-form').hidden = !['typing', 'missing', 'listenType', 'sentenceCompletion'].includes(state.mode);
     const answerLabel = byId('typing-form').querySelector('label');
-    answerLabel.dataset.i18n = state.mode === 'missing' ? 'missingLetters' : state.mode === 'listenType' ? 'spellWhatYouHear' : 'yourAnswer';
+    answerLabel.dataset.i18n = state.mode === 'missing' ? 'missingLetters' : state.mode === 'listenType' ? 'spellWhatYouHear'
+      : state.mode === 'sentenceCompletion' ? 'completionAnswer' : 'yourAnswer';
     answerLabel.textContent = t(answerLabel.dataset.i18n);
     byId('challenge-score').textContent = t('score', { score: state.score });
     if (state.mode === 'matching') { renderMatching(); return; }
@@ -760,7 +800,7 @@
         play.addEventListener('click', () => media.play(assetFor(item.media.audio[recordingLanguage]), () => message('audioPlaybackFailed')));
         byId('challenge-media').append(play);
       }
-    } else setTerm(byId('challenge-prompt'), state.mode === 'sentenceOrder'
+    } else setTerm(byId('challenge-prompt'), ['sentenceOrder', 'sentenceCompletion'].includes(state.mode)
       ? item.sentences[state.front].join(' ') : item.terms[state.front], state.front);
     if (['quiz', 'picture', 'listening'].includes(state.mode)) {
       options.classList.add('quiz-options');
@@ -778,6 +818,12 @@
       hint.textContent = t('sentenceOrderPrompt'); byId('challenge-media').append(hint);
       options.classList.add('sentence-order-options');
       renderSentenceOrder();
+    } else if (state.mode === 'sentenceCompletion') {
+      renderCompletionClue(item, state.back);
+      const input = byId('typing-answer');
+      input.value = ''; input.disabled = false; input.lang = state.back;
+      input.dir = state.back === 'ar' ? 'rtl' : 'ltr'; input.spellcheck = false;
+      input.focus();
     } else if (state.mode === 'tiles') {
       const clusters = games.spellingClusters(item.terms[state.back], state.back);
       state.tileOrder = games.tileOrder(clusters);
@@ -808,6 +854,23 @@
       if (state.mode === 'listenType') byId('challenge-media').querySelector('button').focus();
       else input.focus();
     }
+  }
+
+  function renderCompletionClue(item, language) {
+    const line = document.createElement('p'); line.className = 'completion-cloze';
+    line.lang = language; line.dir = language === 'ar' ? 'rtl' : 'ltr';
+    const { suffix } = games.completionParts(item, language);
+    item.sentences[language].forEach((chunk, index) => {
+      if (index) line.append(document.createTextNode(' '));
+      if (index === item.completionGaps[language]) {
+        const gap = document.createElement('span'); gap.className = 'completion-blank';
+        gap.dataset.completionGap = ''; gap.textContent = '____';
+        gap.setAttribute('role', 'img'); gap.setAttribute('aria-label', t('completionBlank'));
+        line.append(gap);
+        if (suffix) line.append(document.createTextNode(suffix));
+      } else line.append(document.createTextNode(chunk));
+    });
+    byId('challenge-media').append(line);
   }
 
   function renderCategorySort() {
@@ -1280,7 +1343,9 @@
   function evaluateSpelling(answer, element, expected) {
     const state = challenge;
     if (!state || state.locked) return;
-    const correct = games.sameAnswer(answer, expected, state.back);
+    const correct = state.mode === 'sentenceCompletion'
+      ? games.completionMatches(answer, state.items[state.index], state.back)
+      : games.sameAnswer(answer, expected, state.back);
     if (!correct && ++state.attemptsThisItem < 2) {
       retrySpelling(element);
       if (element === byId('typing-answer')) { element.focus(); element.select(); }
@@ -1292,7 +1357,17 @@
     if (state.mode === 'tiles') {
       for (const button of byId('challenge-options').querySelectorAll('button')) button.disabled = true;
     } else byId('typing-answer').disabled = true;
-    feedback(correct, element, state.items[state.index].terms[state.back]);
+    feedback(correct, element, state.mode === 'sentenceCompletion' ? expected : state.items[state.index].terms[state.back]);
+    if (state.mode === 'sentenceCompletion') {
+      const gap = byId('challenge-media').querySelector('[data-completion-gap]');
+      setTerm(gap, expected, state.back); gap.classList.add('revealed');
+      gap.removeAttribute('role'); gap.removeAttribute('aria-label');
+      if (!correct) {
+        const label = document.createElement('span'); label.textContent = `${t('completionAnswerLabel')} `;
+        const answer = document.createElement('strong'); setTerm(answer, expected, state.back);
+        byId('challenge-feedback').replaceChildren(label, answer);
+      }
+    }
     prepareNext();
   }
 
@@ -1427,10 +1502,12 @@
   function answerTyping(event) {
     event.preventDefault();
     const state = challenge;
-    if (!state || !['typing', 'missing', 'listenType'].includes(state.mode) || state.locked) return;
+    if (!state || !['typing', 'missing', 'listenType', 'sentenceCompletion'].includes(state.mode) || state.locked) return;
     const input = byId('typing-answer');
     if (!input.value.trim()) { byId('challenge-feedback').textContent = t('enterAnswer'); return; }
-    const expected = state.mode === 'missing' ? state.missing.answer : state.items[state.index].terms[state.back];
+    const item = state.items[state.index];
+    const expected = state.mode === 'missing' ? state.missing.answer : state.mode === 'sentenceCompletion'
+      ? games.completionParts(item, state.back).answer : item.terms[state.back];
     evaluateSpelling(input.value, input, expected);
   }
 
