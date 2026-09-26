@@ -87,10 +87,11 @@ async function activities() {
         const findItem=()=>lesson.items.find(i=>i.terms[front]===$('#challenge-prompt').textContent);
         if(mode==='flashcards') {$('#reveal-card').click();assert.equal($('#card-answer').hidden,false);$('#next-card').click();continue;}
         if(!$('#challenge-next').hidden){$('#challenge-next').click();continue;}
-        if(['quiz','picture','listening'].includes(mode)) {
+        if(['quiz','picture','listening','listenPicture'].includes(mode)) {
           let item=findItem();
           if(mode==='picture')item=lesson.items.find(i=>a.saved.assets[i.media.image].data===$('.question-picture').src);
           if(mode==='listening'){$('.listen-button').click();item=lesson.items.find(i=>a.saved.assets[i.media.audio[front]].data===a.played.data);}
+          if(mode==='listenPicture'){$('.listen-button').click();item=lesson.items.find(i=>a.saved.assets[i.media.audio[front]].data===a.played.data);}
           $$('.quiz-options button').find(b=>b.dataset.itemId===item.id).click();
         } else if(['typing','missing','listenType','sentenceCompletion'].includes(mode)) {
           let item=findItem(),answer;
@@ -147,6 +148,35 @@ async function activities() {
   }
   assert.equal(errors.length,0,errors.map(e=>e.message).join('\n'));
   a.dom.window.close();console.log(`PASS ${completed} completed activity rounds across all four UI languages; ${gated} Arabic grid gates; progress labels and locked tiles`);
+}
+
+async function monolingual() {
+  const collection=fixture('Polish only');
+  for(const category of collection.lessons[0].categories)for(const language of model.LANGUAGES)if(language!=='pl')category.names[language]='';
+  for(const item of collection.lessons[0].items) {
+    for(const language of model.LANGUAGES)if(language!=='pl'){item.terms[language]='';item.sentences[language]=[];item.completionGaps[language]=null;}
+  }
+  const a=await setup(model.validateCollection(collection));const {$}=a;
+  assert.equal($('.hotspot-editor select').options.length,4,'one-language words remain available as picture markers');
+  a.select('#front-language','pl');a.select('#back-language','pl');
+  const supported=['tiles','missing','picture','pictureLabels','categorySort','listening','listenType','listenPicture','guess','wordSearch'];
+  for(const mode of supported) {
+    a.select('#game-mode',mode);
+    assert.notEqual($('#activity-readiness').textContent,a.w.WordsI18n.strings.en.chooseTwo,mode);
+    $('#start-cards').click();assert.equal($('#challenge-area').hidden,false,mode);
+    if(mode==='tiles') {
+      assert.equal($('#challenge-prompt').textContent,a.w.WordsI18n.strings.en.buildWordPrompt);
+      assert.ok($('#challenge-media img')||$('#challenge-media button'));
+    }
+    if(mode==='listenPicture')assert.equal(a.$$('.picture-answer img').length,4);
+  }
+  for(const mode of ['flashcards','quiz','matching','memory','trueFalse','typing','sentenceOrder','sentenceCompletion','crossword']) {
+    a.select('#game-mode',mode);
+    assert.equal($('#activity-readiness').textContent,a.w.WordsI18n.strings.en.chooseTwo,mode);
+    $('#start-cards').click();assert.equal($('#challenge-area').hidden,true,mode);
+  }
+  assert.equal(errors.length,0,errors.map(e=>e.message).join('\n'));
+  a.dom.window.close();console.log('PASS one-language activity gates, media clues, and audio-to-picture choices');
 }
 
 async function editor() {
@@ -263,4 +293,4 @@ async function failures() {
   a.dom.window.close();console.log('PASS failed collection/progress storage, literal answer interpolation, and delayed discarded attachments');
 }
 
-(async()=>{await activities();await editor();await dragging();await failures();})().catch(error=>{console.error(error);process.exitCode=1;});
+(async()=>{await activities();await monolingual();await editor();await dragging();await failures();})().catch(error=>{console.error(error);process.exitCode=1;});

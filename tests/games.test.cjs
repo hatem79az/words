@@ -203,6 +203,55 @@ test('picture and listening choices require four distinct media clues', () => {
   assert.equal(games.readiness(value, 'en', 'pl', assets).picture, 0);
 });
 
+test('one-language lessons power media, spelling, labels, sorting, and search activities', () => {
+  const value = model.createLesson('Polskie słowa');
+  const assets = {};
+  value.categories = [
+    { id: 'a', names: { en: '', pl: 'Pierwsza', ar: '', de: '' } },
+    { id: 'b', names: { en: '', pl: 'Druga', ar: '', de: '' } }
+  ];
+  value.items = ['kot', 'pies', 'dom', 'woda', 'kawa'].map((word, index) => {
+    const item = model.createItem();
+    item.terms.pl = word; item.categoryId = index < 2 ? 'a' : 'b';
+    item.media.image = `image-${index}`; item.media.audio.pl = `voice-${index}`;
+    assets[`image-${index}`] = { mime: 'image/webp', data: `image-${index}` };
+    assets[`voice-${index}`] = { mime: 'audio/mpeg', data: `voice-${index}` };
+    return item;
+  });
+  value.items[0].media.hotspots = [
+    { itemId: value.items[1].id, x: .2, y: .2 },
+    { itemId: value.items[2].id, x: .8, y: .8 }
+  ];
+  const counts = games.readiness(value, 'pl', 'pl', assets);
+  assert.equal(counts.picture, 5);
+  assert.equal(counts.listening, 5);
+  assert.equal(counts.listenPicture, 5);
+  assert.equal(counts.listenType, 5);
+  assert.equal(counts.tiles, 5);
+  assert.equal(counts.missing, 3);
+  assert.equal(counts.guess, 5);
+  assert.equal(counts.wordSearch, 5);
+  assert.equal(counts.pictureLabels, 1);
+  assert.equal(counts.categorySort, 4);
+  assert.equal(counts.flashcards, 0);
+  assert.equal(counts.quiz, 0);
+  assert.equal(counts.crossword, 0);
+  assert.equal(games.listeningPicturePairs(value, assets, 'pl').length, 5);
+});
+
+test('answer-only activities do not require an unused front-language term', () => {
+  const value = model.createLesson('Polish only');
+  const assets = {};
+  value.items = ['kot', 'pies', 'dom', 'woda'].map((word, index) => {
+    const item = model.createItem(); item.terms.pl = word; item.media.image = `image-${index}`;
+    assets[`image-${index}`] = { mime: 'image/webp', data: `image-${index}` };
+    return item;
+  });
+  assert.equal(games.readiness(value, 'en', 'pl', assets).picture, 4);
+  assert.equal(games.readiness(value, 'en', 'pl', assets).guess, 4);
+  assert.equal(games.readiness(value, 'en', 'pl', assets).typing, 0);
+});
+
 test('picture label scenes require an image and two distinct eligible saved terms', () => {
   const value = lesson(4);
   value.items[0].media.image = 'scene';

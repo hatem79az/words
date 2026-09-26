@@ -2,7 +2,7 @@
 
 ## Product goal
 
-One teacher-created lesson feeds many genuinely different practice activities. A lesson may contain English, Polish, Arabic, and German terms, images, optional recordings, categories, and short contextual sentences. The learner can choose a language direction and play whenever the activity has enough suitable items. The application works locally without an account or network connection.
+One teacher-created lesson feeds many genuinely different practice activities. A lesson may contain English, Polish, Arabic, and German terms, images, optional recordings, categories, and short contextual sentences. Each word needs a term in at least one language; activities decide whether they need one selected language, a bilingual pair, a picture, or a recording. The application works locally without an account or network connection.
 
 The core rule is **edit a word once, update every eligible activity**. Games never keep their own editable copies of the lesson. A game that lacks data explains what the teacher can add.
 
@@ -18,7 +18,7 @@ Wrap the completed browser app for Windows only, supply a portable or installed 
 
 ## Activity inventory
 
-The release target includes these modes. A language pair means a prompt language and an answer language chosen by the learner. Repeated or ambiguous translations are excluded from games that need unique pairs. Small lessons show readiness guidance instead of broken rounds.
+The release target includes these modes. A language pair means a prompt language and an answer language chosen by the learner. The same language may be selected for activities whose clue is a picture, recording, partial word, puzzle, label, or category. Repeated or ambiguous terms and media are excluded where they could create more than one correct answer. Small lessons show readiness guidance instead of broken rounds.
 
 | Group | Activity | What the learner does | Data gate |
 | --- | --- | --- | --- |
@@ -28,12 +28,13 @@ The release target includes these modes. A language pair means a prompt language
 | Recognition | Memory cards | Turn over cards and remember pairs. | Four unique pairs. |
 | Recognition | True or false | Judge a deliberately correct or incorrect word pair. | Several unique pairs; balanced rounds. |
 | Spelling | Type the answer | Recall and type the complete target word or short phrase. | A clear prompt and target term. |
-| Spelling | Letter tiles | Put the target graphemes in order. | A suitable word; tiles use Unicode graphemes. |
+| Spelling | Letter tiles | Put the target graphemes in order. | A suitable word; same-language play also needs a picture or recording clue. |
 | Spelling | Missing letters | Complete a word with a few hidden graphemes. | A suitable word; enough visible context. |
 | Spelling | Letter guess | Guess letters with a limited mistake count and a visible clue. | A suitable word; no ambiguous clue. |
 | Spelling | Word search | Find target words in a grid. | Several short words and an eligible alphabet/script. |
 | Spelling | Crossword | Fill intersecting word clues with keyboard input. | Several suitable words with a valid generated grid. |
-| Listening | Listen and choose | Hear a recording and choose the matching word or image. | Four items with relevant recordings and distinct answers. |
+| Listening | Listen and choose | Hear a recording and choose the matching written word. | Four items with relevant recordings and distinct answers. |
+| Listening | Listen and choose picture | Hear a recording and choose its picture. | Four distinct words with recordings and distinct pictures. |
 | Listening | Listen and type | Hear a recording and type the target term. | Recording and teacher-approved answer. |
 | Visual | Picture choice | Choose the term for an image. | Four distinct images and target terms. |
 | Visual | Label the picture | Place terms on teacher-marked parts of an image. | An image with at least two labelled hotspots. |
@@ -41,17 +42,18 @@ The release target includes these modes. A language pair means a prompt language
 | Context | Sentence order | Rebuild a short sentence from word chunks. | Teacher-entered example and approved chunk order. |
 | Context | Complete the sentence | Choose or type a missing word in context. | Teacher-entered sentence with a validated gap and answer. |
 
-These 18 modes are the complete phase 1 release list. Timed rounds, a random wheel, and a gameshow look can be optional presentation settings, not separate learning mechanics. All 18 activities now have code and local checks: flashcards, multiple choice, match pairs, memory cards, true or false, typed spelling, picture choice, picture labels, category sort, sentence order, sentence completion, listen and choose, letter tiles, missing letters, listen and type, letter guess, word search, and crossword. The full Windows browser acceptance pass remains open.
+These 19 modes are the complete phase 1 release list. Timed rounds, a random wheel, and a gameshow look can be optional presentation settings, not separate learning mechanics. All 19 activities now have code and local checks: flashcards, multiple choice, match pairs, memory cards, true or false, typed spelling, picture choice, picture labels, category sort, sentence order, sentence completion, listen and choose, listen and choose picture, letter tiles, missing letters, listen and type, letter guess, word search, and crossword. The full Windows browser acceptance pass remains open.
 
 ### Language-specific answer rules
 
 - Preserve Polish diacritics, German umlauts and ß, and Arabic letters. Use Unicode NFC normalization and case folding appropriate to the target language; do not silently remove accents or Arabic marks. A teacher may add accepted alternatives later.
+- Picture choice, picture labels, category sort, listen and choose, listen and type, listen and choose picture, missing letters, letter guess, and word search can use one-language entries. Letter tiles can also use them when a picture or target-language recording supplies the clue. Flashcards, translation games, sentence activities, and crossword keep their bilingual clue-and-answer requirements.
 - Letter games split text into **grapheme clusters**, not JavaScript string positions, so combining marks stay with their base character. The teacher can disable a spelling mode for an unsuitable word or script.
 - The current letter tiles and missing letters accept distinct single words of suitable length. They use [Intl.Segmenter](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Segmenter) for grapheme splitting; if it is unavailable, the game explains why it cannot run instead of breaking letters apart. Listen-and-type uses a recording in the answer language and requires an explicit Play action.
 - Letter guess accepts 3–10 graphemes and includes target graphemes in its choice set, with six allowed mistakes. Word search accepts 3–5 distinct answer words of 3–8 graphemes, lays them horizontally or vertically, and accepts endpoint selection in either direction. A bounded placement attempt falls back to guaranteed separate rows. Word search currently supports English, Polish, and German answer words; Arabic answer words are explicitly gated until a readable grid is designed.
 - Crossword selects up to five eligible 3–8 grapheme answer words and requires at least three with real intersections. It assigns clue numbers from final start positions, checks complete answers while preserving marked letters, and keeps wrong drafts for editing. It supports English, Polish, and German answer words; Arabic answer words are gated until the grid and entry flow can show them readably.
 - Memory cards selects four to six unique lesson pairs and shuffles both sides face down. It keeps matching pairs visible, briefly shows mismatches before covering them, counts complete attempts, and supports all four languages with each revealed term's direction.
-- Category sort uses teacher-named groups in the selected answer language, with at least two unambiguous word pairs in each of two groups. A round selects two to four groups and two words from each, with one retry before revealing the correct group. Membership is stored on the shared lesson item, not in a separate game list.
+- Category sort uses teacher-named groups in the selected answer language, with at least two unambiguous usable words in each of two groups. A round selects two to four groups and two words from each, with one retry before revealing the correct group. Membership is stored on the shared lesson item, not in a separate game list.
 - Sentence order uses teacher-authored ordered chunks in both selected languages. The front sentence is a clue for assembling the answer-language sentence. A 3–12-chunk answer needs at least two distinct chunks, but repeated chunks stay separate selectable tiles; incomplete or duplicate sentence clues are excluded. A round has up to ten examples, supports undo and clear, and allows one retry before showing the approved order.
 - Sentence completion uses the same teacher-authored sentences. The teacher selects a single existing chunk in the target sentence as the gap. Its text is the approved answer while terminal sentence punctuation remains visible in the clue. The front sentence is another clue, and a typed response is checked with NFC normalization and case folding while preserving marks; typing the visible terminal punctuation is optional. Duplicate visible questions are excluded; one retry precedes answer reveal. The round has up to ten examples and works in either language direction.
 - Avoid distractors with the same meaning or identical written answer. Do not turn a reading or listening comprehension task into a mere translation prompt when richer context is available.
@@ -59,7 +61,7 @@ These 18 modes are the complete phase 1 release list. Timed rounds, a random whe
 
 ## Lesson and storage model
 
-Version 1 stores one collection with lessons; each item has `terms` keyed by `en`, `pl`, `ar`, and `de`, plus reserved media slots. Version 2 embeds assets in a self-contained JSON export. Item media references stable asset IDs: one WebP picture and optional recordings keyed by language. Version 3 adds optional picture hotspots that refer to item IDs in the same lesson; duplicates remap those IDs. Version 4 adds lesson categories with localized names and item membership; duplicates remap category IDs. Version 5 adds optional ordered sentence chunks per language on each item. Version 6 adds optional per-language gap indexes pointing to those chunks, so the approved completion answer remains in the shared sentence. Versions 1–5 migrate in memory. Imported PNG/JPG/WebP pictures are resized to at most 1024 pixels per side and encoded as WebP. Audio is copied as MP3, WAV, OGG, WebM, or M4A when the browser supports it. The app never edits the source files or stores absolute paths. Accepted alternative answers may be added later.
+Version 1 stores one collection with lessons; each item has `terms` keyed by `en`, `pl`, `ar`, and `de`, plus reserved media slots. At least one term must be present, while each activity applies its own stricter data gate. Version 2 embeds assets in a self-contained JSON export. Item media references stable asset IDs: one WebP picture and optional recordings keyed by language. Version 3 adds optional picture hotspots that refer to item IDs in the same lesson; duplicates remap those IDs. Version 4 adds lesson categories with localized names and item membership; duplicates remap category IDs. Version 5 adds optional ordered sentence chunks per language on each item. Version 6 adds optional per-language gap indexes pointing to those chunks, so the approved completion answer remains in the shared sentence. Versions 1–5 migrate in memory. Imported PNG/JPG/WebP pictures are resized to at most 1024 pixels per side and encoded as WebP. Audio is copied as MP3, WAV, OGG, WebM, or M4A when the browser supports that file. The app never edits the source files or stores absolute paths. Accepted alternative answers may be added later.
 
 In phase 1, JSON import/export is the durable transfer path. IndexedDB stores the working copy when available; the earlier localStorage cache is imported when present. Browser storage is a convenience because behavior on `file://` pages varies and quota can be exceeded. Save the lesson before exporting; the JSON includes media bytes. Images are limited to a 12 MB source and roughly 1.65 MB encoded WebP, recordings to 4 MB each, and the total asset data to about 24 MB. In phase 2, a Windows app will use an ordinary writable content folder and a separate per-computer progress location.
 

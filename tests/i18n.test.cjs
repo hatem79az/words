@@ -17,11 +17,11 @@ test('all four dictionaries have the same keys and interpolation fields', () => 
   }
 });
 
-test('every static HTML translation and all eighteen activity labels exist', () => {
+test('every static HTML translation and all nineteen activity labels exist', () => {
   const html = fs.readFileSync(require.resolve('../index.html'), 'utf8');
   for (const [, key] of html.matchAll(/data-i18n(?:-placeholder)?="([^"]+)"/g)) {
     for (const values of Object.values(strings)) assert.ok(values[key], key);
   }
   const options = html.match(/<select id="game-mode">([\s\S]*?)<\/select>/)[1];
-  assert.equal([...options.matchAll(/<option /g)].length, 18);
+  assert.equal([...options.matchAll(/<option /g)].length, 19);
 });

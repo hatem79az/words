@@ -38,6 +38,8 @@ test('history is bounded and rejects malformed records without blocking storage 
   const valid = record('a');
   assert.throws(() => progress.append([], { ...valid, score: 5 }), /invalidProgress/);
   assert.throws(() => progress.append([], { ...valid, front: 'pl' }), /invalidProgress/);
+  const monolingual = { ...valid, mode: 'listenPicture', front: 'pl', back: 'pl' };
+  assert.deepEqual(progress.append([], monolingual), [monolingual]);
   assert.throws(() => progress.append([], { ...valid, finishedAt: 'bad' }), /invalidProgress/);
   const history = Array.from({ length: progress.MAX_ENTRIES }, (_, index) => record(`lesson-${index}`));
   const bounded = progress.append(history, valid);
