@@ -98,6 +98,115 @@
     return spellingPairs(lesson, front, back, 'wordSearch');
   }
 
+  function crosswordPairs(lesson, front, back) {
+    return wordSearchPairs(lesson, front, back).filter(item =>
+      spellingClusters(item.terms[back], back).every(letter => /^\p{Script=Latin}\p{M}*$/u.test(letter)));
+  }
+
+  function generateCrossword(items, language) {
+    if (language === 'ar' || !hasGraphemeSupport()) return null;
+    const words = items.slice(0, 12).map(item => ({
+      id: item.id,
+      letters: spellingClusters(item.terms[language], language).map(letter => answerKey(letter, language))
+    })).filter(word => word.letters.length >= 3 && word.letters.length <= 8 &&
+      word.letters.every(letter => /^\p{Script=Latin}\p{M}*$/u.test(letter)));
+    if (words.length < 3 || new Set(words.map(word => word.letters.join(''))).size !== words.length) return null;
+    const size = 17;
+    let best = null;
+
+    function candidate(grid, letters, direction, row, col) {
+      const dr = direction === 'down' ? 1 : 0;
+      const dc = direction === 'across' ? 1 : 0;
+      const endRow = row + dr * (letters.length - 1);
+      const endCol = col + dc * (letters.length - 1);
+      if (row < 0 || col < 0 || endRow >= size || endCol >= size) return null;
+      const before = grid[row - dr]?.[col - dc];
+      const after = grid[endRow + dr]?.[endCol + dc];
+      if (before || after) return null;
+      let crossings = 0;
+      for (let index = 0; index < letters.length; index += 1) {
+        const r = row + dr * index;
+        const c = col + dc * index;
+        const existing = grid[r][c];
+        if (existing) {
+          if (existing.letter !== letters[index] || existing[direction]) return null;
+          crossings += 1;
+        } else if (direction === 'across'
+          ? grid[r - 1]?.[c] || grid[r + 1]?.[c]
+          : grid[r]?.[c - 1] || grid[r]?.[c + 1]) return null;
+      }
+      return crossings ? { row, col, direction, crossings } : null;
+    }
+
+    function place(grid, word, position) {
+      const cells = word.letters.map((letter, index) => {
+        const row = position.row + (position.direction === 'down' ? index : 0);
+        const col = position.col + (position.direction === 'across' ? index : 0);
+        if (!grid[row][col]) grid[row][col] = { letter, across: false, down: false };
+        grid[row][col][position.direction] = true;
+        return { row, col };
+      });
+      return { id: word.id, direction: position.direction, cells, letters: word.letters };
+    }
+
+    for (let anchor = 0; anchor < words.length; anchor += 1) {
+      const grid = Array.from({ length: size }, () => Array(size).fill(null));
+      const first = words[anchor];
+      const entries = [place(grid, first, { row: 8, col: 8 - Math.floor(first.letters.length / 2), direction: 'across' })];
+      const pending = words.slice(anchor + 1).concat(words.slice(0, anchor));
+      let added = true;
+      while (added && entries.length < 5) {
+        added = false;
+        for (let index = 0; index < pending.length && entries.length < 5;) {
+          const word = pending[index];
+          let choice = null;
+          for (let row = 0; row < size; row += 1) for (let col = 0; col < size; col += 1) {
+            const cell = grid[row][col];
+            if (!cell) continue;
+            for (let letterIndex = 0; letterIndex < word.letters.length; letterIndex += 1) {
+              if (word.letters[letterIndex] !== cell.letter) continue;
+              for (const direction of ['across', 'down']) {
+                const r = row - (direction === 'down' ? letterIndex : 0);
+                const c = col - (direction === 'across' ? letterIndex : 0);
+                const option = candidate(grid, word.letters, direction, r, c);
+                if (option && (!choice || option.crossings > choice.crossings)) choice = option;
+              }
+            }
+          }
+          if (choice) {
+            entries.push(place(grid, word, choice));
+            pending.splice(index, 1);
+            added = true;
+          } else index += 1;
+        }
+      }
+      if (!best || entries.length > best.entries.length) best = { grid, entries };
+      if (best.entries.length === 5) break;
+    }
+    if (!best || best.entries.length < 3) return null;
+    const occupied = best.entries.flatMap(entry => entry.cells);
+    const minRow = Math.min(...occupied.map(cell => cell.row));
+    const maxRow = Math.max(...occupied.map(cell => cell.row));
+    const minCol = Math.min(...occupied.map(cell => cell.col));
+    const maxCol = Math.max(...occupied.map(cell => cell.col));
+    const grid = best.grid.slice(minRow, maxRow + 1).map(row => row.slice(minCol, maxCol + 1)
+      .map(cell => cell && { letter: cell.letter, number: null, entryIds: [] }));
+    const entries = best.entries.map(entry => ({ ...entry,
+      cells: entry.cells.map(cell => ({ row: cell.row - minRow, col: cell.col - minCol }))
+    }));
+    const starts = [...new Set(entries.map(entry => `${entry.cells[0].row},${entry.cells[0].col}`))]
+      .map(key => key.split(',').map(Number))
+      .sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    const numberAt = new Map(starts.map(([row, col], index) => [`${row},${col}`, index + 1]));
+    for (const entry of entries) {
+      const start = entry.cells[0];
+      entry.number = numberAt.get(`${start.row},${start.col}`);
+      grid[start.row][start.col].number = entry.number;
+      for (const cell of entry.cells) grid[cell.row][cell.col].entryIds.push(entry.id);
+    }
+    return { grid, entries };
+  }
+
   function gridPath(start, end) {
     if (!start || !end || (start.row !== end.row && start.col !== end.col)) return [];
     const length = Math.max(Math.abs(end.row - start.row), Math.abs(end.col - start.col)) + 1;
@@ -194,6 +303,7 @@
     const listenType = listeningTypingPairs(lesson, assets, front, back).length;
     const guess = spellingPairs(lesson, front, back, 'guess').length;
     const wordSearchItems = wordSearchPairs(lesson, front, back).length;
+    const crossword = generateCrossword(crosswordPairs(lesson, front, back), back);
     return {
       flashcards: cards.length,
       quiz: distinct.length >= 4 ? distinct.length : 0,
@@ -204,6 +314,7 @@
       listenType,
       guess,
       wordSearch: wordSearchItems >= 3 ? wordSearchItems : 0,
+      crossword: crossword ? crossword.entries.length : 0,
       picture: pictures >= 4 ? pictures : 0,
       listening: listening >= 4 ? listening : 0
     };
@@ -211,5 +322,5 @@
 
   return { answerKey, sameAnswer, eligiblePairs, mediaPairs, hasGraphemeSupport, spellingClusters,
     spellingPairs, listeningTypingPairs, tileOrder, missingPlan, guessOptions, wordSearchPairs,
-    generateWordSearch, gridPath, shuffle, quizChoices, matchingRounds, readiness };
+    generateWordSearch, crosswordPairs, generateCrossword, gridPath, shuffle, quizChoices, matchingRounds, readiness };
 });
