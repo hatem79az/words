@@ -2,15 +2,15 @@
 
 This file is the handoff point for the next coding session. **Every pull request that changes the app must update this file before it is merged.** Move finished work to the short completed list, place the next unfinished deliverable at the top, and update its acceptance checks. The full scope lives in [docs/BUILD_PLAN.md](docs/BUILD_PLAN.md).
 
-## Next deliverable: sentence completion
+## Next deliverable: learner progress
 
-Let the teacher mark a validated gap and answer within a contextual example on a lesson item. Let the learner complete that sentence from the shared lesson, in either selected language direction.
+Record the learner's activity results separately from teacher lesson content. Show useful per-lesson progress and a way to clear it without changing or exporting the lesson source.
 
 Acceptance checks:
 
-1. The teacher can set a single clear gap and approved answer in the target-language contextual sentence, using the saved lesson item rather than a separate game list.
-2. Gap and answer survive save, duplicate, export, and import; older JSON versions still open. Missing or ambiguous answers receive a useful editor or readiness message.
-3. The learner fills the gap by click or keyboard with a retry and answer reveal, accurate score/progress, language-specific marks, Arabic RTL, and narrow-screen support.
+1. Record a completed round with lesson ID, activity, language direction, score, total, and completion time in a local progress store. Keep progress separate from teacher lesson JSON exports.
+2. Show a concise per-lesson summary and recent attempts; let the learner clear progress with an explicit confirmation. Deleted lessons must not leave confusing visible records.
+3. Respect keyboard, narrow widths, RTL interface text, and storage failure; keep game play available even when progress cannot be saved.
 4. Update this file before merging the PR. Keep the browser acceptance item below open until it is exercised on Windows.
 
 ## Open browser acceptance gate
@@ -30,7 +30,8 @@ On the intended Windows browser, attach pictures and recordings, save, close/reo
 - Picture labels adds up to eight teacher-positioned markers to an attached scene image, with normalized coordinates and references to lesson items. Version 3 JSON preserves them and migrates older exports; duplicates remap item IDs. A learner chooses terms and numbered markers with mouse or keyboard, and the activity explains when a picture lacks enough eligible labels.
 - Category sort adds up to 30 localized lesson groups and optional item membership in version 4 JSON. Older exports migrate, duplicates remap category IDs, and invalid/ambiguous names or broken references are rejected. Rounds draw two pairs from each of two to four eligible groups, with keyboard-friendly choices and one retry.
 - Sentence order adds optional 3–12 ordered chunks per language to each lesson word in version 5 JSON. Older exports migrate and duplicates deep-copy examples. The learner uses the front-language sentence to rebuild a target sentence from clickable, keyboard-accessible tiles, including repeated chunks and Arabic RTL; an incorrect attempt offers a retry, then the approved sentence.
+- Sentence completion adds a teacher-selected gap index per language in version 6 JSON; the selected sentence chunk is the approved answer. Older exports migrate, duplicates preserve the choice, invalid indexes and punctuation-only answers are rejected, and duplicate visible questions are excluded. The learner types a missing chunk against a front-language example with one retry, answer reveal, and RTL presentation.
 
 ## After this job
 
-Finish learner progress and the complete browser acceptance pass. **One-click Windows packaging is phase 2 only.**
+Finish the complete browser acceptance and accessibility pass after learner progress. **One-click Windows packaging is phase 2 only.**

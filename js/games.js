@@ -393,6 +393,31 @@
     return shuffled;
   }
 
+  function sentenceCompletionPairs(lesson, front, back) {
+    const pairs = model.cardsFor(lesson, front, back).filter(item =>
+      item.sentences[front].length >= 3 && item.completionGaps[back] !== null);
+    const questionKey = item => {
+      const { suffix } = completionParts(item, back);
+      const target = item.sentences[back].map((chunk, index) =>
+        index === item.completionGaps[back] ? `\uFFFC${suffix}` : chunk).join(' ');
+      return `${answerKey(item.sentences[front].join(' '), front)}\u0000${answerKey(target, back)}`;
+    };
+    const counts = new Map();
+    for (const item of pairs) counts.set(questionKey(item), (counts.get(questionKey(item)) || 0) + 1);
+    return pairs.filter(item => counts.get(questionKey(item)) === 1);
+  }
+
+  function completionParts(item, language) {
+    const chunk = item.sentences[language][item.completionGaps[language]];
+    const suffix = chunk.match(/([.!?؟،,;؛:…]+["”»')\]]*)$/u)?.[0] || '';
+    return { answer: suffix ? chunk.slice(0, -suffix.length) : chunk, suffix };
+  }
+
+  function completionMatches(actual, item, language) {
+    const { answer, suffix } = completionParts(item, language);
+    return sameAnswer(actual, answer, language) || Boolean(suffix && sameAnswer(actual, answer + suffix, language));
+  }
+
   function readiness(lesson, front, back, assets = {}) {
     const cards = eligiblePairs(lesson, front, back, false);
     const distinct = eligiblePairs(lesson, front, back, true);
@@ -422,11 +447,13 @@
       pictureLabels,
       categorySort: categorySortPlan(lesson, front, back)?.items.length || 0,
       sentenceOrder: Math.min(10, sentenceOrderPairs(lesson, front, back).length),
+      sentenceCompletion: Math.min(10, sentenceCompletionPairs(lesson, front, back).length),
       listening: listening >= 4 ? listening : 0
     };
   }
 
   return { answerKey, sameAnswer, eligiblePairs, mediaPairs, pictureLabelScenes, categorySortPlan, sentenceOrderPairs, sentenceTileOrder,
+    sentenceCompletionPairs, completionParts, completionMatches,
     hasGraphemeSupport, spellingClusters,
     spellingPairs, listeningTypingPairs, tileOrder, missingPlan, guessOptions, wordSearchPairs,
     generateWordSearch, crosswordPairs, generateCrossword, gridPath, shuffle, quizChoices, matchingRounds,

@@ -5,7 +5,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  const SCHEMA_VERSION = 5;
+  const SCHEMA_VERSION = 6;
   const LANGUAGES = Object.freeze(['en', 'pl', 'ar', 'de']);
   const MAX_LESSONS = 500;
   const MAX_ITEMS = 500;
@@ -41,6 +41,7 @@
   function createItem() {
     return { id: id(), terms: { en: '', pl: '', ar: '', de: '' }, categoryId: null,
       sentences: { en: [], pl: [], ar: [], de: [] },
+      completionGaps: { en: null, pl: null, ar: null, de: null },
       media: { image: null, audio: {}, hotspots: [] } };
   }
 
@@ -65,6 +66,15 @@
       });
       if (sentences[language].join(' ').length > 500) throw new Error('invalidSentences');
     }
+    const rawGaps = value.completionGaps ?? {};
+    if (!isObject(rawGaps)) throw new Error('invalidCompletions');
+    const completionGaps = {};
+    for (const language of LANGUAGES) {
+      const index = rawGaps[language] ?? null;
+      if (index !== null && (!Number.isInteger(index) || index < 0 || index >= sentences[language].length ||
+          !/[\p{L}\p{N}]/u.test(sentences[language][index]))) throw new Error('invalidCompletions');
+      completionGaps[language] = index;
+    }
     const media = value.media ?? { image: null, audio: null };
     if (!isObject(media) || (media.image !== null && (typeof media.image !== 'string' || !ASSET_ID.test(media.image))) ||
         (media.audio !== null && !isObject(media.audio))) throw new Error('unsupportedMedia');
@@ -84,7 +94,7 @@
     if (new Set(hotspots.map(point => point.itemId)).size !== hotspots.length ||
         hotspots.some((point, index) => hotspots.slice(index + 1).some(other =>
           Math.hypot(point.x - other.x, point.y - other.y) < HOTSPOT_SPACING))) throw new Error('invalidHotspots');
-    return { id: value.id, terms, categoryId, sentences, media: { image: media.image, audio, hotspots } };
+    return { id: value.id, terms, categoryId, sentences, completionGaps, media: { image: media.image, audio, hotspots } };
   }
 
   function validateLesson(value) {
@@ -124,7 +134,7 @@
   }
 
   function validateCollection(value) {
-    if (!isObject(value) || ![1, 2, 3, 4, SCHEMA_VERSION].includes(value.schemaVersion) || !Array.isArray(value.lessons) || value.lessons.length > MAX_LESSONS) {
+    if (!isObject(value) || ![1, 2, 3, 4, 5, SCHEMA_VERSION].includes(value.schemaVersion) || !Array.isArray(value.lessons) || value.lessons.length > MAX_LESSONS) {
       throw new Error('invalidCollection');
     }
     const rawAssets = value.schemaVersion === 1 ? {} : value.assets;
@@ -179,6 +189,7 @@
     copy.items = original.items.map(item => ({ ...item, id: ids.get(item.id), terms: { ...item.terms },
       categoryId: item.categoryId ? categoryIds.get(item.categoryId) : null,
       sentences: Object.fromEntries(LANGUAGES.map(language => [language, [...item.sentences[language]]])),
+      completionGaps: { ...item.completionGaps },
       media: { image: item.media.image, audio: { ...item.media.audio },
         hotspots: item.media.hotspots.map(point => ({ ...point, itemId: ids.get(point.itemId) })) } }));
     return copy;

@@ -128,6 +128,10 @@ h3 { margin-bottom: 0; font-size: 1.08rem; }
 .sentence-editor summary:hover { background: #edf7f5; }
 .sentence-editor-body { padding: .1rem 1rem 1rem; }
 .sentence-editor-body p { margin-bottom: .7rem; }
+.completion-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .85rem; }
+.completion-grid label { display: grid; gap: .25rem; min-width: 0; font-size: .84rem; font-weight: 750; }
+.completion-grid select { width: 100%; min-width: 0; }
+.sentence-editor-body .completion-hint { margin: 1rem 0 .7rem; }
 .media-hint { padding: .75rem 1rem; margin: .8rem 0 0; color: #3b6370; background: #eef8f5; border: 1px solid #d9eee8; border-radius: .85rem; font-size: .87rem; }
 .media-editor { margin-top: 1rem; background: #f8fafc; border: 1px solid #dae3ed; border-radius: .9rem; }
 .media-editor summary { padding: .85rem 1rem; color: var(--teal); font-weight: 800; cursor: pointer; border-radius: .85rem; }
@@ -198,6 +202,13 @@ h3 { margin-bottom: 0; font-size: 1.08rem; }
 }
 .challenge-media { display: flex; justify-content: center; margin: -.2rem 0 1.2rem; }
 .challenge-media:empty { display: none; }
+.completion-cloze {
+  width: min(100%, 45rem); margin: 0; padding: 1.1rem 1.3rem; border: 1px solid #dae3ed; border-radius: 1rem;
+  background: #f8fafc; color: #25345b; font-size: clamp(1.2rem, 3vw, 1.6rem); font-weight: 700;
+  line-height: 1.8; text-align: center; overflow-wrap: anywhere;
+}
+.completion-blank { display: inline-block; min-width: 4.5rem; padding: 0 .3rem; border-bottom: 2px solid var(--violet); color: var(--violet); }
+.completion-blank.revealed { color: #14593b; border-color: #3e966b; }
 .category-play-hint { margin: 0; color: var(--muted); font-weight: 700; text-align: center; }
 .category-sort-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
 .category-sort-options .game-option { min-width: 0; overflow-wrap: anywhere; }
@@ -382,7 +393,7 @@ h3 { margin-bottom: 0; font-size: 1.08rem; }
 @media (max-width: 530px) {
   .site-header { align-items: flex-start; flex-direction: column; }
   .header-actions { width: 100%; justify-content: space-between; }
-  .term-grid, .quiz-options { grid-template-columns: 1fr; }
+  .term-grid, .completion-grid, .quiz-options { grid-template-columns: 1fr; }
   .true-false-pair { grid-template-columns: 1fr; }
   .practice-settings { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .practice-settings label { grid-column: 1; }

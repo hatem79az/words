@@ -61,6 +61,37 @@ test('sentence order uses distinct authored examples and shuffles repeated chunk
   assert.throws(() => games.sentenceTileOrder(['same', 'same', 'same'], 'en'), /invalidSentences/);
 });
 
+test('sentence completion uses selected answer chunks and skips duplicate visible questions', () => {
+  const value = lesson(5);
+  value.items[0].sentences.en = ['I', 'see', 'a cat.'];
+  value.items[0].sentences.pl = ['Widzę', 'małego', 'kota.'];
+  value.items[0].completionGaps.pl = 2;
+  value.items[1].sentences.en = ['I', 'see', 'a dog.'];
+  value.items[1].sentences.pl = ['Widzę', 'małego', 'psa.'];
+  value.items[1].completionGaps.pl = 2;
+  value.items[1].completionGaps.en = 1;
+  value.items[2].sentences.en = ['I', 'see', 'a cat.'];
+  value.items[2].sentences.pl = ['Widzę', 'małego', 'psa.'];
+  value.items[2].completionGaps.pl = 2;
+  value.items[3].sentences.en = ['Look', 'at', 'the cat.'];
+  value.items[3].sentences.ar = ['أنا', 'أرى', 'قطة.'];
+  value.items[3].completionGaps.ar = 2;
+  assert.deepEqual(games.sentenceCompletionPairs(value, 'en', 'pl').map(item => item.id), [value.items[1].id]);
+  assert.equal(games.readiness(value, 'en', 'pl').sentenceCompletion, 1);
+  assert.deepEqual(games.sentenceCompletionPairs(value, 'pl', 'en').map(item => item.id), [value.items[1].id]);
+  assert.deepEqual(games.sentenceCompletionPairs(value, 'en', 'ar').map(item => item.id), [value.items[3].id]);
+  assert.deepEqual(games.completionParts(value.items[1], 'pl'), { answer: 'psa', suffix: '.' });
+  assert.equal(games.completionMatches('psa', value.items[1], 'pl'), true);
+  assert.equal(games.completionMatches('psa.', value.items[1], 'pl'), true);
+  assert.equal(games.completionMatches('pśa', value.items[1], 'pl'), false);
+  assert.deepEqual(games.completionParts(value.items[3], 'ar'), { answer: 'قطة', suffix: '.' });
+  assert.equal(games.completionMatches('قطة', value.items[3], 'ar'), true);
+  assert.equal(games.completionMatches('قطة،', value.items[3], 'ar'), false);
+  assert.equal(games.sameAnswer('قطة', 'قطة.', 'ar'), false);
+  assert.equal(games.sameAnswer('kota.', 'kota.', 'pl'), true);
+  assert.equal(games.sameAnswer('kota.', 'kóta.', 'pl'), false);
+});
+
 test('ambiguous repeated prompts and answers are excluded from recognition games', () => {
   const value = lesson(6);
   value.items[1].terms.en = value.items[0].terms.en;
