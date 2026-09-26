@@ -8,6 +8,8 @@
   const storage = window.WordsStorage;
   const progress = window.WordsProgress;
   const UI_KEY = 'words.uiLanguage.v1';
+  const MODE_LABEL_KEYS = { tiles: 'letterTiles', missing: 'missingLettersGame', picture: 'pictureChoice',
+    listening: 'listenChoose', guess: 'letterGuess' };
   const byId = id => document.getElementById(id);
   let collection = model.newCollection();
   let currentId = null;
@@ -677,7 +679,7 @@
       : t('progressReviewSummary', { rounds: summary.count, reviews: summary.reviews });
     const rows = summary.recent.map(entry => {
       const row = document.createElement('li');
-      const activity = document.createElement('strong'); activity.textContent = t(entry.mode);
+      const activity = document.createElement('strong'); activity.textContent = t(MODE_LABEL_KEYS[entry.mode] || entry.mode);
       const direction = document.createElement('bdi'); direction.dir = 'ltr'; direction.className = 'progress-meta';
       direction.textContent = `${entry.front.toUpperCase()} → ${entry.back.toUpperCase()}`;
       const result = document.createElement('span'); result.className = 'progress-meta';
@@ -791,6 +793,8 @@
   function renderChallenge() {
     if (!challenge) return;
     const state = challenge;
+    byId('challenge-area').classList.remove('round-finished');
+    byId('challenge-area').querySelector('.celebration-confetti')?.remove();
     state.locked = false;
     state.attemptsThisItem = 0;
     const options = byId('challenge-options');
@@ -970,7 +974,93 @@
     options.querySelector('button').focus();
   }
 
-  function renderSentenceOrder(focusTile = null) {
+  // Use the rendered rows, including their direction, to find a logical insertion point.
+  // This also handles a wrapped tray and RTL sentences without reversing the stored order.
+  function tileInsertionPoint(container, clientX, clientY) {
+    const items = [...container.children].filter(child => child.matches('button[data-drag-tile-id]'))
+      .map((button, index) => {
+        const rect = button.getBoundingClientRect();
+        return { button, index, rect, middleX: (rect.left + rect.right) / 2, middleY: (rect.top + rect.bottom) / 2 };
+      });
+    if (!items.length) return { index: 0, button: null, side: null };
+    const distance = item => Math.max(item.rect.top - clientY, 0, clientY - item.rect.bottom);
+    const closest = items.reduce((best, item) => distance(item) < distance(best) ? item : best);
+    const row = items.filter(item => Math.abs(item.middleY - closest.middleY) < 2);
+    const rtl = container.dir === 'rtl';
+    const before = row.find(item => rtl ? clientX > item.middleX : clientX < item.middleX);
+    if (before) return { index: before.index, button: before.button, side: 'before' };
+    const last = row[row.length - 1];
+    return { index: last.index + 1, button: last.button, side: 'after' };
+  }
+
+  function attachTileDrag(assembly, tray, tiles, selection, render) {
+    const state = challenge;
+    let dragging = null;
+    const containers = [assembly, tray];
+    const clearMarkers = () => {
+      for (const container of containers) {
+        container.classList.remove('drag-target');
+        for (const button of container.querySelectorAll('.drop-before, .drop-after'))
+          button.classList.remove('drop-before', 'drop-after');
+      }
+    };
+    for (const container of containers) {
+      container.addEventListener('dragover', event => {
+        if (challenge !== state || state.locked || dragging === null ||
+            (container === tray && !selection.includes(dragging))) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'move';
+        clearMarkers();
+        container.classList.add('drag-target');
+        if (container === assembly) {
+          const point = tileInsertionPoint(assembly, event.clientX, event.clientY);
+          if (point.button) point.button.classList.add(`drop-${point.side}`);
+        }
+      });
+      container.addEventListener('dragleave', event => {
+        if (!container.contains(event.relatedTarget)) clearMarkers();
+      });
+      container.addEventListener('drop', event => {
+        if (challenge !== state || state.locked || dragging === null ||
+            event.dataTransfer.getData('text/plain') !== String(dragging)) return;
+        event.preventDefault();
+        const id = dragging;
+        const previous = selection.indexOf(id);
+        if (container === tray) {
+          if (previous < 0) return;
+          selection.splice(previous, 1);
+        } else {
+          let index = tileInsertionPoint(assembly, event.clientX, event.clientY).index;
+          if (previous >= 0) {
+            selection.splice(previous, 1);
+            if (previous < index) index -= 1;
+          }
+          selection.splice(index, 0, id);
+        }
+        clearMarkers();
+        clearSpellingFeedback();
+        render(id, container === assembly ? 'assembly' : 'tray');
+      });
+      for (const button of container.querySelectorAll('button[data-drag-tile-id]')) {
+        button.draggable = !button.disabled;
+        if (button.disabled) continue;
+        button.addEventListener('dragstart', event => {
+          if (challenge !== state || state.locked) { event.preventDefault(); return; }
+          dragging = tiles.find(tile => String(tile.id) === button.dataset.dragTileId).id;
+          event.dataTransfer.setData('text/plain', String(dragging));
+          event.dataTransfer.effectAllowed = 'move';
+          button.classList.add('dragging');
+        });
+        button.addEventListener('dragend', () => {
+          dragging = null;
+          button.classList.remove('dragging');
+          clearMarkers();
+        });
+      }
+    }
+  }
+
+  function renderSentenceOrder(focusTile = null, focusArea = 'tray') {
     const state = challenge;
     if (!state || state.mode !== 'sentenceOrder') return;
     const options = byId('challenge-options'); options.replaceChildren();
@@ -988,6 +1078,7 @@
       const button = document.createElement('button'); button.type = 'button'; button.className = 'letter-tile sentence-chunk placed';
       setTerm(button, tile.text, state.back);
       button.setAttribute('aria-label', t('removeSentenceChunk', { chunk: tile.text }));
+      button.dataset.dragTileId = String(id);
       button.disabled = state.locked;
       button.addEventListener('click', () => {
         state.sentenceSelection = state.sentenceSelection.filter(value => value !== id);
@@ -1001,6 +1092,7 @@
     for (const tile of state.sentenceTiles) {
       const button = document.createElement('button'); button.type = 'button'; button.className = 'letter-tile sentence-chunk';
       button.dataset.sentenceTileId = String(tile.id);
+      button.dataset.dragTileId = String(tile.id);
       setTerm(button, tile.text, state.back);
       button.setAttribute('aria-label', t('addSentenceChunk', { chunk: tile.text }));
       button.disabled = state.locked || selected.has(tile.id);
@@ -1041,13 +1133,15 @@
       prepareNext();
     });
     controls.append(clear, check); options.append(assembly, tray, controls);
+    attachTileDrag(assembly, tray, state.sentenceTiles, state.sentenceSelection, renderSentenceOrder);
     const focus = focusTile === 'check' ? check
       : focusTile === null ? tray.querySelector('button:not(:disabled)')
+      : focusArea === 'assembly' ? [...assembly.querySelectorAll('button')].find(button => button.dataset.dragTileId === String(focusTile))
       : [...tray.querySelectorAll('button')].find(button => button.dataset.sentenceTileId === String(focusTile));
     if (focus && !focus.disabled) focus.focus();
   }
 
-  function renderTiles(focusTile = null) {
+  function renderTiles(focusTile = null, focusArea = 'tray') {
     const state = challenge;
     if (!state || state.mode !== 'tiles') return;
     const options = byId('challenge-options');
@@ -1067,6 +1161,7 @@
       const button = document.createElement('button'); button.type = 'button'; button.className = 'letter-tile placed';
       setTerm(button, tile.letter, state.back);
       button.setAttribute('aria-label', t('removeTile', { letter: tile.letter }));
+      button.dataset.dragTileId = String(id);
       button.disabled = state.locked;
       button.addEventListener('click', () => {
         state.tileSelection = state.tileSelection.filter(value => value !== id);
@@ -1080,6 +1175,7 @@
     for (const tile of state.tileOrder) {
       const button = document.createElement('button'); button.type = 'button'; button.className = 'letter-tile';
       button.dataset.tileId = String(tile.id);
+      button.dataset.dragTileId = String(tile.id);
       setTerm(button, tile.letter, state.back);
       button.setAttribute('aria-label', t('addTile', { letter: tile.letter }));
       button.disabled = state.locked || selected.has(tile.id);
@@ -1101,8 +1197,10 @@
       evaluateSpelling(answer, check, state.items[state.index].terms[state.back]);
     });
     controls.append(clear, check); options.append(assembly, tray, controls);
+    attachTileDrag(assembly, tray, state.tileOrder, state.tileSelection, renderTiles);
     const focus = focusTile === 'check' ? check
       : focusTile === null ? tray.querySelector('button:not(:disabled)')
+      : focusArea === 'assembly' ? [...assembly.querySelectorAll('button')].find(button => button.dataset.dragTileId === String(focusTile))
       : [...tray.querySelectorAll('button')].find(button => button.dataset.tileId === String(focusTile));
     if (focus && !focus.disabled) focus.focus();
   }
@@ -1736,6 +1834,7 @@
     const state = challenge;
     const total = state.mode === 'pictureLabels' ? state.labelTotal : state.items.length;
     media.stop();
+    byId('challenge-area').classList.add('round-finished');
     byId('challenge-options').replaceChildren();
     byId('challenge-media').replaceChildren();
     byId('typing-form').hidden = true;
@@ -1752,6 +1851,7 @@
     byId('challenge-score').textContent = '';
     effects.animate(byId('challenge-prompt'), 'correct');
     effects.play('complete');
+    effects.celebrate(byId('challenge-area'));
     recordProgress({ lessonId: state.lessonId, mode: state.mode, front: state.front, back: state.back,
       score: state.score, total, finishedAt: new Date().toISOString() });
     challenge = null;

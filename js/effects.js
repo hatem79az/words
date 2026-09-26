@@ -57,5 +57,59 @@
     element.animate(keyframes, { duration: kind === 'wrong' ? 220 : 260, easing: 'ease-out' });
   }
 
-  root.WordsEffects = { isMuted, setMuted, play, animate };
+  function celebrate(host) {
+    if (!host || !root.requestAnimationFrame ||
+        (root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
+    try {
+      const width = host.clientWidth;
+      const height = Math.min(host.clientHeight, 460);
+      if (!width || !height) return;
+      const canvas = root.document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      if (!context) return;
+      const ratio = Math.min(root.devicePixelRatio || 1, 2);
+      canvas.className = 'celebration-confetti';
+      canvas.setAttribute('aria-hidden', 'true');
+      canvas.style.height = `${height}px`;
+      canvas.width = Math.round(width * ratio);
+      canvas.height = Math.round(height * ratio);
+      context.scale(ratio, ratio);
+      host.append(canvas);
+      const colors = ['#5142bf', '#18a3a1', '#df765e', '#e8b34e', '#8d72dd'];
+      const particles = Array.from({ length: 50 }, (_, index) => ({
+        x: width / 2 + (Math.random() - .5) * 45,
+        y: Math.min(height * .33, 145),
+        vx: (Math.random() - .5) * Math.min(width * .9, 660),
+        vy: -(110 + Math.random() * 220),
+        rotation: Math.random() * Math.PI,
+        spin: (Math.random() - .5) * 10,
+        size: 4 + Math.random() * 5,
+        color: colors[index % colors.length]
+      }));
+      let start = null;
+      const frame = now => {
+        if (!canvas.isConnected) return;
+        if (start === null) start = now;
+        const time = (now - start) / 1000;
+        context.clearRect(0, 0, width, height);
+        context.globalAlpha = Math.max(0, Math.min(1, (1.25 - time) * 3));
+        for (const piece of particles) {
+          const x = piece.x + piece.vx * time;
+          const y = piece.y + piece.vy * time + 240 * time * time;
+          if (y < -12 || y > height + 12) continue;
+          context.save();
+          context.translate(x, y);
+          context.rotate(piece.rotation + piece.spin * time);
+          context.fillStyle = piece.color;
+          context.fillRect(-piece.size / 2, -piece.size / 3, piece.size, piece.size * .66);
+          context.restore();
+        }
+        if (time < 1.25) root.requestAnimationFrame(frame);
+        else canvas.remove();
+      };
+      root.requestAnimationFrame(frame);
+    } catch (_) { /* decoration must never prevent a completed round from being recorded */ }
+  }
+
+  root.WordsEffects = { isMuted, setMuted, play, animate, celebrate };
 })(globalThis);
