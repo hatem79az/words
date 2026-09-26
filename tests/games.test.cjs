@@ -133,6 +133,24 @@ test('picture and listening choices require four distinct media clues', () => {
   assert.equal(games.readiness(value, 'en', 'pl', assets).picture, 0);
 });
 
+test('picture label scenes require an image and two distinct eligible saved terms', () => {
+  const value = lesson(4);
+  value.items[0].media.image = 'scene';
+  value.items[0].media.hotspots = [
+    { itemId: value.items[1].id, x: .2, y: .25 },
+    { itemId: value.items[2].id, x: .7, y: .75 }
+  ];
+  const assets = { scene: { mime: 'image/webp', data: 'data:image/webp;base64,UklGRg==' } };
+  const saved = model.saveLesson(model.newCollection(), value, assets).lessons[0];
+  const scenes = games.pictureLabelScenes(saved, assets, 'ar', 'pl');
+  assert.equal(scenes.length, 1);
+  assert.deepEqual(scenes[0].hotspots.map(point => point.item.terms.pl), ['słowo 1', 'słowo 2']);
+  assert.equal(games.readiness(saved, 'ar', 'pl', assets).pictureLabels, 1);
+  value.items[2].terms.pl = value.items[1].terms.pl;
+  assert.equal(games.pictureLabelScenes(value, assets, 'ar', 'pl').length, 0);
+  assert.equal(games.pictureLabelScenes(saved, {}, 'ar', 'pl').length, 0);
+});
+
 test('spelling tiles keep combining marks and Arabic vowels with their letters', () => {
   assert.deepEqual(games.spellingClusters('a\u0328la', 'pl'), ['ą', 'l', 'a']);
   assert.deepEqual(games.spellingClusters('كِتاب', 'ar'), ['كِ', 'ت', 'ا', 'ب']);

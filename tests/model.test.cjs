@@ -45,14 +45,15 @@ test('invalid imports are rejected before they replace existing lessons', () => 
   assert.equal(valid.lessons[0].items[0].terms.pl, 'kot');
 });
 
-test('old text-only exports migrate to version 2 without losing terms', () => {
+test('old text-only exports migrate to version 3 without losing terms', () => {
   const oldLesson = lesson();
   oldLesson.items.forEach(item => { item.media = { image: null, audio: null }; });
   const upgraded = model.validateCollection({ schemaVersion: 1, lessons: [oldLesson] });
-  assert.equal(upgraded.schemaVersion, 2);
+  assert.equal(upgraded.schemaVersion, 3);
   assert.deepEqual(upgraded.assets, {});
   assert.equal(upgraded.lessons[0].items[0].terms.ar, 'قطة');
   assert.deepEqual(upgraded.lessons[0].items[0].media.audio, {});
+  assert.deepEqual(upgraded.lessons[0].items[0].media.hotspots, []);
 });
 
 test('portable image and audio survive export, while missing references are rejected', () => {
@@ -67,4 +68,44 @@ test('portable image and audio survive export, while missing references are reje
   assert.deepEqual(Object.keys(saved.assets).sort(), ['photo', 'voice']);
   assert.deepEqual(model.validateCollection(JSON.parse(JSON.stringify(saved))), saved);
   assert.throws(() => model.validateCollection({ ...saved, assets: { photo: assets.photo } }), /missingMedia/);
+});
+
+test('picture markers survive save, export, older import, and duplicate with remapped item IDs', () => {
+  const value = lesson();
+  const bird = model.createItem(); bird.terms.en = 'bird'; bird.terms.pl = 'ptak';
+  value.items.push(bird);
+  value.items[0].media.image = 'scene';
+  value.items[0].media.hotspots = [
+    { itemId: value.items[1].id, x: .2, y: .3 },
+    { itemId: bird.id, x: .8, y: .7 }
+  ];
+  const assets = { scene: { mime: 'image/webp', data: 'data:image/webp;base64,UklGRg==' } };
+  const saved = model.saveLesson(model.newCollection(), value, assets);
+  assert.equal(saved.schemaVersion, 3);
+  assert.deepEqual(model.validateCollection(JSON.parse(JSON.stringify(saved))), saved);
+  const copy = model.duplicateLesson(saved.lessons[0]);
+  assert.deepEqual(copy.items[0].media.hotspots.map(point => point.itemId), [copy.items[1].id, copy.items[2].id]);
+  assert.notEqual(copy.items[1].id, saved.lessons[0].items[1].id);
+  const previous = structuredClone(saved);
+  previous.schemaVersion = 2;
+  previous.lessons[0].items.forEach(item => { delete item.media.hotspots; });
+  const migrated = model.validateCollection(previous);
+  assert.equal(migrated.schemaVersion, 3);
+  assert.deepEqual(migrated.lessons[0].items[0].media.hotspots, []);
+});
+
+test('picture markers reject missing images, broken references, overlapping or invalid positions', () => {
+  const value = lesson();
+  value.items[0].media.hotspots = [{ itemId: value.items[1].id, x: .5, y: .5 }];
+  assert.throws(() => model.validateLesson(value), /invalidHotspots/);
+  value.items[0].media.image = 'scene';
+  value.items[0].media.hotspots[0].itemId = 'deleted-item';
+  assert.throws(() => model.validateLesson(value), /invalidHotspots/);
+  value.items[0].media.hotspots[0].itemId = value.items[1].id;
+  value.items[0].media.hotspots.push({ itemId: value.items[0].id, x: .51, y: .5 });
+  assert.throws(() => model.validateLesson(value), /invalidHotspots/);
+  value.items[0].media.hotspots[1].x = 1.1;
+  assert.throws(() => model.validateLesson(value), /invalidHotspots/);
+  value.items[0].media.hotspots[1].x = .8;
+  assert.equal(model.validateLesson(value).items[0].media.hotspots.length, 2);
 });

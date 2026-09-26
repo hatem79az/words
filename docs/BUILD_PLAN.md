@@ -41,7 +41,7 @@ The release target includes these modes. A language pair means a prompt language
 | Context | Sentence order | Rebuild a short sentence from word chunks. | Teacher-entered example and approved chunk order. |
 | Context | Complete the sentence | Choose or type a missing word in context. | Teacher-entered sentence with a validated gap and answer. |
 
-These 18 modes are the complete phase 1 release list. Timed rounds, a random wheel, and a gameshow look can be optional presentation settings, not separate learning mechanics. The current build includes flashcards, multiple choice, match pairs, memory cards, true or false, typed spelling, picture choice, listen and choose, letter tiles, missing letters, listen and type, letter guess, word search, and crossword. The other four rows remain planned work.
+These 18 modes are the complete phase 1 release list. Timed rounds, a random wheel, and a gameshow look can be optional presentation settings, not separate learning mechanics. The current build includes flashcards, multiple choice, match pairs, memory cards, true or false, typed spelling, picture choice, picture labels, listen and choose, letter tiles, missing letters, listen and type, letter guess, word search, and crossword. The other three rows remain planned work.
 
 ### Language-specific answer rules
 
@@ -56,7 +56,7 @@ These 18 modes are the complete phase 1 release list. Timed rounds, a random whe
 
 ## Lesson and storage model
 
-Version 1 stores one collection with lessons; each item has `terms` keyed by `en`, `pl`, `ar`, and `de`, plus reserved media slots. Version 2 embeds assets in a self-contained JSON export. Item media references stable asset IDs: one WebP picture and optional recordings keyed by language. Imported PNG/JPG/WebP pictures are resized to at most 1024 pixels per side and encoded as WebP. Audio is copied as MP3, WAV, OGG, WebM, or M4A when the browser supports it. The app never edits the source files or stores absolute paths. Version 1 imports migrate to version 2 in memory. Later schema work adds categories, accepted answers, contextual examples, and picture hotspots.
+Version 1 stores one collection with lessons; each item has `terms` keyed by `en`, `pl`, `ar`, and `de`, plus reserved media slots. Version 2 embeds assets in a self-contained JSON export. Item media references stable asset IDs: one WebP picture and optional recordings keyed by language. Version 3 adds optional picture hotspots that refer to item IDs in the same lesson; duplicates remap those IDs, and version 1 and 2 imports migrate in memory. Imported PNG/JPG/WebP pictures are resized to at most 1024 pixels per side and encoded as WebP. Audio is copied as MP3, WAV, OGG, WebM, or M4A when the browser supports it. The app never edits the source files or stores absolute paths. Later schema work adds categories, accepted answers, and contextual examples.
 
 In phase 1, JSON import/export is the durable transfer path. IndexedDB stores the working copy when available; the earlier localStorage cache is imported when present. Browser storage is a convenience because behavior on `file://` pages varies and quota can be exceeded. Save the lesson before exporting; the JSON includes media bytes. Images are limited to a 12 MB source and roughly 1.65 MB encoded WebP, recordings to 4 MB each, and the total asset data to about 24 MB. In phase 2, a Windows app will use an ordinary writable content folder and a separate per-computer progress location.
 
@@ -78,7 +78,7 @@ Technical references: [Web Animations API](https://developer.mozilla.org/en-US/d
 | 2. Portable media | Image/audio authoring, self-contained JSON import/export, picture choice, listen and choose. | Code is present; Windows browser transfer and offline play remain an open acceptance gate. |
 | 3a. First spelling games | Tiles, missing letters, listen and type. | Code and local Unicode checks are present; Windows browser interaction and RTL visual acceptance remain open. |
 | 3b. More spelling | Letter guess, word search, crossword. | Code and local generator checks are present for all three; Windows browser acceptance remains open. |
-| 4. More practice | Memory, true/false, categories, sentence order, sentence completion, picture labels. | Memory cards and true/false have code and local checks; the other activities remain open. Games use shared data and clearly state their requirements. |
+| 4. More practice | Memory, true/false, categories, sentence order, sentence completion, picture labels. | Memory, true/false, and picture labels have code and local checks; categories and sentence activities remain open. |
 | 5. Quality and progress | Learner progress, retries, backups, accessibility, visual/audio polish, complete browser acceptance pass. | All listed activities work offline on Windows in the browser with keyboard support and reduced motion. |
 | 6. Windows wrapper | App icon, local content folder, portable Windows build and second-laptop test. | Click to open; copy lessons/media; play offline; no VS Code or Node.js for the learner. |
 
