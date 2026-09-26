@@ -320,6 +320,7 @@
 
   function resetDeck() {
     media.stop();
+    if (challenge?.memory?.timer) clearTimeout(challenge.memory.timer);
     deck = []; cardIndex = 0; byId('card-area').hidden = true;
     challenge = null; byId('challenge-area').hidden = true;
     byId('practice-message').textContent = '';
@@ -418,7 +419,7 @@
       : byId('back-language').value === 'ar' ? 'needLatinCrossword' : 'needCrossword';
     if (mode === 'guess') return games.hasGraphemeSupport() ? 'needGuessWords' : 'needGraphemeSupport';
     if (mode === 'tiles' || mode === 'missing') return games.hasGraphemeSupport() ? 'needSpellingWords' : 'needGraphemeSupport';
-    if (mode === 'quiz' || mode === 'matching') return 'needFour';
+    if (mode === 'quiz' || mode === 'matching' || mode === 'memory') return 'needFour';
     return 'noCards';
   }
 
@@ -436,7 +437,7 @@
       : mode === 'crossword' ? games.crosswordPairs(lesson, front, back)
       : ['tiles', 'missing', 'guess'].includes(mode) ? games.spellingPairs(lesson, front, back, mode)
       : games.eligiblePairs(lesson, front, back, true);
-    if (['quiz', 'matching', 'picture', 'listening'].includes(mode) && items.length < 4) {
+    if (['quiz', 'matching', 'memory', 'picture', 'listening'].includes(mode) && items.length < 4) {
       byId('practice-message').textContent = t(mode === 'picture' ? 'needPictures' : mode === 'listening' ? 'needAudio' : 'needFour'); return;
     }
     if (mode === 'wordSearch' && items.length < 3) { byId('practice-message').textContent = t(unavailableReason(mode)); return; }
@@ -444,7 +445,7 @@
     if (mode === 'crossword' && !puzzle) { byId('practice-message').textContent = t(unavailableReason(mode)); return; }
     if (!items.length) { byId('practice-message').textContent = t(unavailableReason(mode)); return; }
     const selected = mode === 'crossword' ? puzzle.entries.map(entry => items.find(item => item.id === entry.id))
-      : games.shuffle(items).slice(0, mode === 'wordSearch' ? 5 : items.length);
+      : games.shuffle(items).slice(0, mode === 'wordSearch' ? 5 : mode === 'memory' ? 6 : items.length);
     challenge = { mode, front, back, items: selected, index: 0, score: 0, locked: false,
       rounds: mode === 'matching' ? games.matchingRounds(items) : [], roundIndex: 0,
       matched: new Set(), selectedFront: null, selectedBack: null, attempts: 0, attemptsThisItem: 0 };
@@ -455,6 +456,7 @@
       puzzle, solved: new Set(), drafts: new Map(), activeEntryId: puzzle.entries[0].id,
       active: { ...puzzle.entries[0].cells[0] }
     };
+    if (mode === 'memory') challenge.memory = games.createMemoryRound(selected, front, back);
     byId('challenge-area').hidden = false;
     renderChallenge();
   }
@@ -484,6 +486,13 @@
     answerLabel.textContent = t(answerLabel.dataset.i18n);
     byId('challenge-score').textContent = t('score', { score: state.score });
     if (state.mode === 'matching') { renderMatching(); return; }
+    if (state.mode === 'memory') {
+      byId('challenge-prompt').textContent = t('memoryPrompt');
+      byId('challenge-prompt').removeAttribute('lang'); byId('challenge-prompt').removeAttribute('dir');
+      options.classList.add('memory-board');
+      renderMemory();
+      return;
+    }
     if (state.mode === 'wordSearch') {
       byId('challenge-prompt').textContent = t('wordSearchPrompt');
       byId('challenge-prompt').removeAttribute('lang'); byId('challenge-prompt').removeAttribute('dir');
@@ -966,6 +975,81 @@
     byId('challenge-next').focus();
   }
 
+  function renderMemory(focusIndex = null) {
+    const state = challenge;
+    if (!state || state.mode !== 'memory') return;
+    const round = state.memory;
+    const options = byId('challenge-options');
+    options.replaceChildren();
+    byId('challenge-progress').textContent = t('matchedCount', { count: round.matched.size, total: state.items.length });
+    byId('challenge-meter').max = state.items.length;
+    byId('challenge-meter').value = round.matched.size;
+    byId('challenge-score').textContent = t('memoryAttempts', { count: round.attempts });
+    round.cards.forEach((card, index) => {
+      const matched = round.matched.has(card.itemId);
+      const visible = matched || round.revealed.includes(index);
+      const button = document.createElement('button'); button.type = 'button'; button.className = 'memory-card';
+      button.dataset.memoryIndex = String(index);
+      button.disabled = matched;
+      if (round.pending && !matched) button.setAttribute('aria-disabled', 'true');
+      if (visible) {
+        button.classList.add(matched ? 'matched' : 'revealed');
+        const number = document.createElement('span'); number.className = 'visually-hidden';
+        number.textContent = t('memoryCardNumber', { number: index + 1 });
+        const side = document.createElement('span'); side.className = 'memory-side';
+        side.textContent = t(card.side === 'front' ? 'memoryFront' : 'memoryBack');
+        const term = document.createElement('span'); term.className = 'memory-term';
+        setTerm(term, card.term, card.language);
+        button.append(number, side, term);
+      } else {
+        const back = document.createElement('span'); back.className = 'memory-back'; back.textContent = '?';
+        back.setAttribute('aria-hidden', 'true'); button.append(back);
+        button.setAttribute('aria-label', t('memoryFaceDown', { number: index + 1 }));
+      }
+      button.addEventListener('click', () => chooseMemory(index));
+      options.append(button);
+    });
+    if (!state.locked && focusIndex !== false) {
+      const nextIndex = focusIndex === null
+        ? round.cards.findIndex(card => !round.matched.has(card.itemId)) : focusIndex;
+      options.querySelector(`[data-memory-index="${nextIndex}"]`)?.focus();
+    }
+  }
+
+  function chooseMemory(index) {
+    const state = challenge;
+    if (!state || state.mode !== 'memory' || state.locked) return;
+    const round = state.memory;
+    const result = games.memoryTurn(round, index);
+    if (result === 'ignored') return;
+    if (result === 'match') state.score = round.matched.size;
+    if (round.matched.size === state.items.length) state.locked = true;
+    renderMemory(result === 'match' ? null : index);
+    const output = byId('challenge-feedback');
+    output.className = `challenge-feedback ${result === 'match' ? 'positive' : result === 'mismatch' ? 'negative' : ''}`;
+    output.textContent = t(result === 'first' ? 'memoryChooseSecond'
+      : result === 'match' ? 'memoryPairFound' : 'memoryMismatch');
+    const button = byId('challenge-options').querySelector(`[data-memory-index="${index}"]`);
+    effects.animate(button, result === 'mismatch' ? 'wrong' : 'card');
+    if (result !== 'first') effects.play(result === 'match' ? 'correct' : 'wrong');
+    if (result === 'mismatch') {
+      round.timer = setTimeout(() => {
+        if (challenge !== state || !games.memoryCover(round)) return;
+        round.timer = null;
+        const focused = byId('challenge-options').contains(document.activeElement)
+          ? Number(document.activeElement.dataset.memoryIndex) : false;
+        renderMemory(focused);
+        output.className = 'challenge-feedback';
+        output.textContent = t('memoryTryAgain');
+      }, 950);
+    }
+    if (state.locked) {
+      byId('challenge-next').hidden = false;
+      byId('challenge-next').textContent = t('seeResults');
+      byId('challenge-next').focus();
+    }
+  }
+
   function renderMatching() {
     const state = challenge;
     const round = state.rounds[state.roundIndex];
@@ -1029,7 +1113,7 @@
     const state = challenge;
     if (!state) return;
     media.stop();
-    if (state.mode === 'wordSearch' || state.mode === 'crossword') { finishChallenge(); return; }
+    if (['wordSearch', 'crossword', 'memory'].includes(state.mode)) { finishChallenge(); return; }
     if (state.mode === 'matching') {
       if (state.roundIndex === state.rounds.length - 1) { finishChallenge(); return; }
       state.roundIndex += 1;
@@ -1051,7 +1135,9 @@
     byId('challenge-prompt').textContent = t('roundComplete');
     byId('challenge-prompt').removeAttribute('lang'); byId('challenge-prompt').removeAttribute('dir');
     byId('challenge-feedback').className = 'challenge-feedback positive';
-    byId('challenge-feedback').textContent = state.mode === 'matching'
+    byId('challenge-feedback').textContent = state.mode === 'memory'
+      ? t('memoryResults', { count: state.items.length, attempts: state.memory.attempts })
+      : state.mode === 'matching'
       ? t('matchResults', { attempts: state.attempts })
       : t('finalScore', { score: state.score, total: state.items.length });
     byId('challenge-score').textContent = '';

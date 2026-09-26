@@ -41,7 +41,7 @@ The release target includes these modes. A language pair means a prompt language
 | Context | Sentence order | Rebuild a short sentence from word chunks. | Teacher-entered example and approved chunk order. |
 | Context | Complete the sentence | Choose or type a missing word in context. | Teacher-entered sentence with a validated gap and answer. |
 
-These 18 modes are the complete phase 1 release list. Timed rounds, a random wheel, and a gameshow look can be optional presentation settings, not separate learning mechanics. The current build includes flashcards, multiple choice, match pairs, typed spelling, picture choice, listen and choose, letter tiles, missing letters, listen and type, letter guess, word search, and crossword. The other six rows remain planned work.
+These 18 modes are the complete phase 1 release list. Timed rounds, a random wheel, and a gameshow look can be optional presentation settings, not separate learning mechanics. The current build includes flashcards, multiple choice, match pairs, memory cards, typed spelling, picture choice, listen and choose, letter tiles, missing letters, listen and type, letter guess, word search, and crossword. The other five rows remain planned work.
 
 ### Language-specific answer rules
 
@@ -50,6 +50,7 @@ These 18 modes are the complete phase 1 release list. Timed rounds, a random whe
 - The current letter tiles and missing letters accept distinct single words of suitable length. They use [Intl.Segmenter](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Segmenter) for grapheme splitting; if it is unavailable, the game explains why it cannot run instead of breaking letters apart. Listen-and-type uses a recording in the answer language and requires an explicit Play action.
 - Letter guess accepts 3–10 graphemes and includes target graphemes in its choice set, with six allowed mistakes. Word search accepts 3–5 distinct answer words of 3–8 graphemes, lays them horizontally or vertically, and accepts endpoint selection in either direction. A bounded placement attempt falls back to guaranteed separate rows. Word search currently supports English, Polish, and German answer words; Arabic answer words are explicitly gated until a readable grid is designed.
 - Crossword selects up to five eligible 3–8 grapheme answer words and requires at least three with real intersections. It assigns clue numbers from final start positions, checks complete answers while preserving marked letters, and keeps wrong drafts for editing. It supports English, Polish, and German answer words; Arabic answer words are gated until the grid and entry flow can show them readably.
+- Memory cards selects four to six unique lesson pairs and shuffles both sides face down. It keeps matching pairs visible, briefly shows mismatches before covering them, counts complete attempts, and supports all four languages with each revealed term's direction.
 - Avoid distractors with the same meaning or identical written answer. Do not turn a reading or listening comprehension task into a mere translation prompt when richer context is available.
 - Scores are game attempts, kept apart from lesson source content. Wrong answers lead to a retry or review opportunity.
 
@@ -77,7 +78,7 @@ Technical references: [Web Animations API](https://developer.mozilla.org/en-US/d
 | 2. Portable media | Image/audio authoring, self-contained JSON import/export, picture choice, listen and choose. | Code is present; Windows browser transfer and offline play remain an open acceptance gate. |
 | 3a. First spelling games | Tiles, missing letters, listen and type. | Code and local Unicode checks are present; Windows browser interaction and RTL visual acceptance remain open. |
 | 3b. More spelling | Letter guess, word search, crossword. | Code and local generator checks are present for all three; Windows browser acceptance remains open. |
-| 4. More practice | Memory, true/false, categories, sentence order, sentence completion, picture labels. | Games use shared data and clearly state their data requirements. |
+| 4. More practice | Memory, true/false, categories, sentence order, sentence completion, picture labels. | Memory cards has code and local state checks; the other activities remain open. Games use shared data and clearly state their requirements. |
 | 5. Quality and progress | Learner progress, retries, backups, accessibility, visual/audio polish, complete browser acceptance pass. | All listed activities work offline on Windows in the browser with keyboard support and reduced motion. |
 | 6. Windows wrapper | App icon, local content folder, portable Windows build and second-laptop test. | Click to open; copy lessons/media; play offline; no VS Code or Node.js for the learner. |
 
