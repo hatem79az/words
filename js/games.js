@@ -362,6 +362,37 @@
     return { groups, items: shuffle(groups.flatMap(group => group.items), random) };
   }
 
+  function sentenceOrderPairs(lesson, front, back) {
+    const pairs = model.cardsFor(lesson, front, back).filter(item => {
+      const source = item.sentences[front];
+      const target = item.sentences[back];
+      return source.length >= 3 && target.length >= 3 &&
+        new Set(target.map(chunk => answerKey(chunk, back))).size >= 2;
+    });
+    const sourceCounts = new Map();
+    const targetCounts = new Map();
+    for (const item of pairs) {
+      const source = answerKey(item.sentences[front].join(' '), front);
+      const target = answerKey(item.sentences[back].join(' '), back);
+      sourceCounts.set(source, (sourceCounts.get(source) || 0) + 1);
+      targetCounts.set(target, (targetCounts.get(target) || 0) + 1);
+    }
+    return pairs.filter(item => sourceCounts.get(answerKey(item.sentences[front].join(' '), front)) === 1 &&
+      targetCounts.get(answerKey(item.sentences[back].join(' '), back)) === 1);
+  }
+
+  function sentenceTileOrder(chunks, language, random = Math.random) {
+    if (!Array.isArray(chunks) || chunks.length < 3 || chunks.length > 12 ||
+        new Set(chunks.map(chunk => answerKey(chunk, language))).size < 2) throw new Error('invalidSentences');
+    const tiles = chunks.map((text, id) => ({ id, text }));
+    const shuffled = shuffle(tiles, random);
+    if (shuffled.map(tile => tile.text).join('\u0000') === chunks.join('\u0000')) {
+      const other = shuffled.findIndex(tile => tile.text !== shuffled[0].text);
+      [shuffled[0], shuffled[other]] = [shuffled[other], shuffled[0]];
+    }
+    return shuffled;
+  }
+
   function readiness(lesson, front, back, assets = {}) {
     const cards = eligiblePairs(lesson, front, back, false);
     const distinct = eligiblePairs(lesson, front, back, true);
@@ -390,11 +421,13 @@
       picture: pictures >= 4 ? pictures : 0,
       pictureLabels,
       categorySort: categorySortPlan(lesson, front, back)?.items.length || 0,
+      sentenceOrder: Math.min(10, sentenceOrderPairs(lesson, front, back).length),
       listening: listening >= 4 ? listening : 0
     };
   }
 
-  return { answerKey, sameAnswer, eligiblePairs, mediaPairs, pictureLabelScenes, categorySortPlan, hasGraphemeSupport, spellingClusters,
+  return { answerKey, sameAnswer, eligiblePairs, mediaPairs, pictureLabelScenes, categorySortPlan, sentenceOrderPairs, sentenceTileOrder,
+    hasGraphemeSupport, spellingClusters,
     spellingPairs, listeningTypingPairs, tileOrder, missingPlan, guessOptions, wordSearchPairs,
     generateWordSearch, crosswordPairs, generateCrossword, gridPath, shuffle, quizChoices, matchingRounds,
     createMemoryRound, memoryTurn, memoryCover, trueFalseRounds, readiness };

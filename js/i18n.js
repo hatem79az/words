@@ -90,7 +90,13 @@
       categoryForWord: 'Category', noCategory: 'No category', unnamedCategory: 'Unnamed category', categoryLimit: 'A lesson can have up to 30 categories.',
       invalidCategories: 'Give every category a name, use distinct names in each language, and assign words only to existing categories.',
       categorySort: 'Category sort', needCategorySort: 'Add at least two named categories in the answer language, with two distinct word pairs in each.',
-      categoryPrompt: 'Choose the category for this word.', tryCategoryAgain: 'Try another category.', categoryAnswer: 'The category is {answer}.'
+      categoryPrompt: 'Choose the category for this word.', tryCategoryAgain: 'Try another category.', categoryAnswer: 'The category is {answer}.',
+      exampleSentences: 'Example sentences', sentenceHint: 'Optional: enter an example in each language you use. Separate 3–12 ordered chunks with | and keep punctuation with its word, for example I | see | a cat.',
+      invalidSentences: 'Each entered example needs 3–12 nonempty chunks separated by |, with each chunk up to 80 characters and the sentence up to 500 characters.',
+      sentenceOrder: 'Sentence order', needSentenceOrder: 'Add a three-chunk example in both selected languages for at least one word. Make target chunks reorderable and examples distinct.',
+      sentenceOrderPrompt: 'Arrange the answer-language chunks to match the example.', assembledSentence: 'Your assembled sentence',
+      selectSentenceChunks: 'Choose chunks below', availableSentenceChunks: 'Available sentence chunks',
+      removeSentenceChunk: 'Remove {chunk}', addSentenceChunk: 'Add {chunk}', clearSentence: 'Clear', sentenceAnswerLabel: 'Correct sentence:'
     },
     pl: {
       skip: 'Przejdź do treści', interfaceLanguage: 'Język interfejsu', yourCollection: 'Twoja kolekcja', lessons: 'Lekcje', newLesson: 'Nowa lekcja',
@@ -181,7 +187,13 @@
       categoryForWord: 'Kategoria', noCategory: 'Bez kategorii', unnamedCategory: 'Kategoria bez nazwy', categoryLimit: 'Lekcja może mieć najwyżej 30 kategorii.',
       invalidCategories: 'Nazwij każdą kategorię, użyj różnych nazw w każdym języku i przypisuj słowa tylko do istniejących kategorii.',
       categorySort: 'Sortowanie kategorii', needCategorySort: 'Dodaj co najmniej dwie nazwane kategorie w języku odpowiedzi, po dwie różne pary słów w każdej.',
-      categoryPrompt: 'Wybierz kategorię dla tego słowa.', tryCategoryAgain: 'Spróbuj innej kategorii.', categoryAnswer: 'Poprawna kategoria: {answer}.'
+      categoryPrompt: 'Wybierz kategorię dla tego słowa.', tryCategoryAgain: 'Spróbuj innej kategorii.', categoryAnswer: 'Poprawna kategoria: {answer}.',
+      exampleSentences: 'Przykładowe zdania', sentenceHint: 'Opcjonalnie wpisz przykład w używanych językach. Rozdziel 3–12 części znakiem | i pozostaw interpunkcję przy słowie, np. Widzę | małego | kota.',
+      invalidSentences: 'Każdy wpisany przykład wymaga 3–12 niepustych części rozdzielonych |. Część może mieć do 80 znaków, a zdanie do 500.',
+      sentenceOrder: 'Układanie zdania', needSentenceOrder: 'Dodaj przykład z trzema częściami w obu wybranych językach dla co najmniej jednego słowa. Części odpowiedzi muszą dać się przestawić, a przykłady być różne.',
+      sentenceOrderPrompt: 'Ułóż części zdania w języku odpowiedzi na podstawie przykładu.', assembledSentence: 'Ułożone zdanie',
+      selectSentenceChunks: 'Wybierz części poniżej', availableSentenceChunks: 'Dostępne części zdania',
+      removeSentenceChunk: 'Usuń {chunk}', addSentenceChunk: 'Dodaj {chunk}', clearSentence: 'Wyczyść', sentenceAnswerLabel: 'Poprawne zdanie:'
     },
     ar: {
       skip: 'انتقل إلى المحتوى', interfaceLanguage: 'لغة الواجهة', yourCollection: 'مجموعتك', lessons: 'الدروس', newLesson: 'درس جديد',
@@ -272,7 +284,13 @@
       categoryForWord: 'الفئة', noCategory: 'بلا فئة', unnamedCategory: 'فئة بلا اسم', categoryLimit: 'يمكن أن يحتوي الدرس على ٣٠ فئة كحد أقصى.',
       invalidCategories: 'سمّ كل فئة، واستخدم أسماء مختلفة في كل لغة، وعيّن الكلمات إلى فئات موجودة فقط.',
       categorySort: 'تصنيف الكلمات', needCategorySort: 'أضف فئتين مسمّاتين على الأقل بلغة الإجابة، وفي كل فئة زوجان مختلفان من الكلمات.',
-      categoryPrompt: 'اختر فئة هذه الكلمة.', tryCategoryAgain: 'جرّب فئة أخرى.', categoryAnswer: 'الفئة الصحيحة هي {answer}.'
+      categoryPrompt: 'اختر فئة هذه الكلمة.', tryCategoryAgain: 'جرّب فئة أخرى.', categoryAnswer: 'الفئة الصحيحة هي {answer}.',
+      exampleSentences: 'جمل نموذجية', sentenceHint: 'اختياري: أدخل مثالًا بكل لغة تستخدمها. افصل بين ٣ و١٢ مقطعًا مرتبًا بالرمز | وأبقِ علامات الترقيم مع الكلمة، مثل: أنا | أرى | قطة.',
+      invalidSentences: 'يحتاج كل مثال إلى ٣–١٢ مقطعًا غير فارغ تفصلها |. الحد الأقصى ٨٠ حرفًا للمقطع و٥٠٠ للجملة.',
+      sentenceOrder: 'ترتيب الجملة', needSentenceOrder: 'أضف مثالًا من ثلاثة مقاطع في كلتا اللغتين المختارتين لكلمة واحدة على الأقل، مع مقاطع إجابة قابلة لإعادة الترتيب وأمثلة غير مكررة.',
+      sentenceOrderPrompt: 'رتّب مقاطع لغة الإجابة لتطابق المثال.', assembledSentence: 'الجملة التي رتّبتها',
+      selectSentenceChunks: 'اختر المقاطع أدناه', availableSentenceChunks: 'مقاطع الجملة المتاحة',
+      removeSentenceChunk: 'إزالة {chunk}', addSentenceChunk: 'إضافة {chunk}', clearSentence: 'مسح', sentenceAnswerLabel: 'الجملة الصحيحة:'
     },
     de: {
       skip: 'Zum Inhalt springen', interfaceLanguage: 'Sprache der Oberfläche', yourCollection: 'Deine Sammlung', lessons: 'Lektionen', newLesson: 'Neue Lektion',
@@ -363,7 +381,13 @@
       categoryForWord: 'Kategorie', noCategory: 'Keine Kategorie', unnamedCategory: 'Unbenannte Kategorie', categoryLimit: 'Eine Lektion kann höchstens 30 Kategorien haben.',
       invalidCategories: 'Benenne jede Kategorie, verwende in jeder Sprache unterschiedliche Namen und ordne Wörter nur vorhandenen Kategorien zu.',
       categorySort: 'Kategorien sortieren', needCategorySort: 'Füge mindestens zwei benannte Kategorien in der Antwortsprache mit je zwei unterschiedlichen Wortpaaren hinzu.',
-      categoryPrompt: 'Wähle die Kategorie für dieses Wort.', tryCategoryAgain: 'Versuche eine andere Kategorie.', categoryAnswer: 'Die Kategorie ist {answer}.'
+      categoryPrompt: 'Wähle die Kategorie für dieses Wort.', tryCategoryAgain: 'Versuche eine andere Kategorie.', categoryAnswer: 'Die Kategorie ist {answer}.',
+      exampleSentences: 'Beispielsätze', sentenceHint: 'Optional: Gib Beispiele in den verwendeten Sprachen ein. Trenne 3–12 geordnete Teile mit | und belasse Satzzeichen beim Wort, zum Beispiel Ich | sehe | eine Katze.',
+      invalidSentences: 'Jedes eingegebene Beispiel braucht 3–12 nichtleere Teile, getrennt durch |. Pro Teil sind 80 Zeichen und pro Satz 500 erlaubt.',
+      sentenceOrder: 'Satz ordnen', needSentenceOrder: 'Füge für mindestens ein Wort in beiden gewählten Sprachen einen Satz aus drei Teilen hinzu. Die Antwortteile müssen umstellbar und die Beispiele eindeutig sein.',
+      sentenceOrderPrompt: 'Ordne die Teile in der Antwortsprache passend zum Beispiel.', assembledSentence: 'Dein zusammengesetzter Satz',
+      selectSentenceChunks: 'Wähle unten Satzteile', availableSentenceChunks: 'Verfügbare Satzteile',
+      removeSentenceChunk: '{chunk} entfernen', addSentenceChunk: '{chunk} hinzufügen', clearSentence: 'Leeren', sentenceAnswerLabel: 'Richtiger Satz:'
     }
   };
   root.WordsI18n = { strings, languageNames: { en: 'english', pl: 'polish', ar: 'arabic', de: 'german' } };

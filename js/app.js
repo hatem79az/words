@@ -146,6 +146,24 @@
     categorySelect.dataset.initialCategory = item.categoryId || '';
     categorySelect.addEventListener('change', () => { dirty = true; });
     categoryLabel.append(categoryText, categorySelect);
+    const sentenceEditor = document.createElement('details'); sentenceEditor.className = 'sentence-editor';
+    const sentenceSummary = document.createElement('summary'); sentenceSummary.dataset.i18n = 'exampleSentences';
+    sentenceSummary.textContent = t('exampleSentences');
+    const sentenceBody = document.createElement('div'); sentenceBody.className = 'sentence-editor-body';
+    const sentenceHint = document.createElement('p'); sentenceHint.className = 'muted'; sentenceHint.dataset.i18n = 'sentenceHint';
+    sentenceHint.textContent = t('sentenceHint');
+    const sentenceGrid = document.createElement('div'); sentenceGrid.className = 'term-grid';
+    for (const language of model.LANGUAGES) {
+      const label = document.createElement('label');
+      const name = document.createElement('span'); name.dataset.i18n = i18n.languageNames[language];
+      name.textContent = t(name.dataset.i18n);
+      const input = document.createElement('input'); input.type = 'text'; input.maxLength = 600;
+      input.value = (item.sentences?.[language] || []).join(' | ');
+      input.dataset.sentenceLanguage = language; input.lang = language; input.dir = language === 'ar' ? 'rtl' : 'ltr';
+      input.autocomplete = 'off';
+      label.append(name, input); sentenceGrid.append(label);
+    }
+    sentenceBody.append(sentenceHint, sentenceGrid); sentenceEditor.append(sentenceSummary, sentenceBody);
     const remove = document.createElement('button');
     remove.type = 'button'; remove.className = 'button button-quiet danger remove-item';
     remove.dataset.i18n = 'remove'; remove.textContent = t('remove');
@@ -216,7 +234,7 @@
     const audioList = document.createElement('div'); audioList.className = 'audio-list'; audioList.dataset.audioList = '';
     audioSlot.append(audioLabel, audioSelect, audioInput, audioList);
     content.append(picture, audioSlot); attachments.append(summary, content);
-    row.append(grid, categoryLabel, attachments, remove);
+    row.append(grid, categoryLabel, sentenceEditor, attachments, remove);
     refreshMediaRow(row);
     return row;
   }
@@ -420,7 +438,12 @@
     const items = [...byId('item-list').children].map(row => {
       const terms = {};
       for (const input of row.querySelectorAll('[data-language]')) terms[input.dataset.language] = input.value;
+      const sentences = {};
+      for (const input of row.querySelectorAll('[data-sentence-language]')) {
+        sentences[input.dataset.sentenceLanguage] = input.value.trim() ? input.value.split('|').map(chunk => chunk.trim()) : [];
+      }
       return { id: row.dataset.id, terms, categoryId: row.querySelector('[data-category-select]').value || null,
+        sentences,
         media: { image: row._media.image, audio: { ...row._media.audio },
         hotspots: row._media.hotspots.map(point => ({ ...point })) } };
     }).filter(item => Object.values(item.terms).some(term => term.trim()));
@@ -598,6 +621,7 @@
 
   function unavailableReason(mode) {
     if (mode === 'categorySort') return 'needCategorySort';
+    if (mode === 'sentenceOrder') return 'needSentenceOrder';
     if (mode === 'picture') return 'needPictures';
     if (mode === 'pictureLabels') return 'needPictureLabels';
     if (mode === 'listening') return 'needAudio';
@@ -627,6 +651,7 @@
       : mode === 'wordSearch' ? games.wordSearchPairs(lesson, front, back)
       : mode === 'crossword' ? games.crosswordPairs(lesson, front, back)
       : mode === 'categorySort' ? categoryPlan?.items || []
+      : mode === 'sentenceOrder' ? games.sentenceOrderPairs(lesson, front, back)
       : ['tiles', 'missing', 'guess'].includes(mode) ? games.spellingPairs(lesson, front, back, mode)
       : games.eligiblePairs(lesson, front, back, true);
     if (['quiz', 'matching', 'memory', 'trueFalse', 'picture', 'listening'].includes(mode) && items.length < 4) {
@@ -639,7 +664,8 @@
     const trueFalse = mode === 'trueFalse' ? games.trueFalseRounds(items, back) : null;
     const selected = mode === 'crossword' ? puzzle.entries.map(entry => items.find(item => item.id === entry.id))
       : trueFalse ? trueFalse.map(round => round.item)
-      : games.shuffle(items).slice(0, mode === 'wordSearch' ? 5 : mode === 'memory' ? 6 : mode === 'pictureLabels' ? 3 : items.length);
+      : games.shuffle(items).slice(0, mode === 'wordSearch' ? 5 : mode === 'memory' ? 6 : mode === 'pictureLabels' ? 3
+        : mode === 'sentenceOrder' ? 10 : items.length);
     challenge = { mode, front, back, items: selected, index: 0, score: 0, locked: false,
       rounds: mode === 'matching' ? games.matchingRounds(items) : [], roundIndex: 0,
       matched: new Set(), selectedFront: null, selectedBack: null, attempts: 0, attemptsThisItem: 0 };
@@ -675,6 +701,7 @@
     options.replaceChildren(); options.className = 'challenge-options';
     byId('challenge-feedback').textContent = '';
     byId('challenge-feedback').className = 'challenge-feedback';
+    byId('challenge-feedback').removeAttribute('lang'); byId('challenge-feedback').removeAttribute('dir');
     byId('challenge-next').hidden = true;
     byId('challenge-media').replaceChildren();
     byId('typing-form').hidden = !['typing', 'missing', 'listenType'].includes(state.mode);
@@ -733,7 +760,8 @@
         play.addEventListener('click', () => media.play(assetFor(item.media.audio[recordingLanguage]), () => message('audioPlaybackFailed')));
         byId('challenge-media').append(play);
       }
-    } else setTerm(byId('challenge-prompt'), item.terms[state.front], state.front);
+    } else setTerm(byId('challenge-prompt'), state.mode === 'sentenceOrder'
+      ? item.sentences[state.front].join(' ') : item.terms[state.front], state.front);
     if (['quiz', 'picture', 'listening'].includes(state.mode)) {
       options.classList.add('quiz-options');
       for (const choice of games.quizChoices(item, state.items)) {
@@ -743,6 +771,13 @@
       }
     } else if (state.mode === 'categorySort') {
       renderCategorySort();
+    } else if (state.mode === 'sentenceOrder') {
+      state.sentenceTiles = games.sentenceTileOrder(item.sentences[state.back], state.back);
+      state.sentenceSelection = [];
+      const hint = document.createElement('p'); hint.className = 'category-play-hint';
+      hint.textContent = t('sentenceOrderPrompt'); byId('challenge-media').append(hint);
+      options.classList.add('sentence-order-options');
+      renderSentenceOrder();
     } else if (state.mode === 'tiles') {
       const clusters = games.spellingClusters(item.terms[state.back], state.back);
       state.tileOrder = games.tileOrder(clusters);
@@ -813,6 +848,83 @@
       options.append(button);
     }
     options.querySelector('button').focus();
+  }
+
+  function renderSentenceOrder(focusTile = null) {
+    const state = challenge;
+    if (!state || state.mode !== 'sentenceOrder') return;
+    const options = byId('challenge-options'); options.replaceChildren();
+    const selected = new Set(state.sentenceSelection);
+    const assembly = document.createElement('div'); assembly.className = 'tile-assembly sentence-assembly';
+    assembly.lang = state.back; assembly.dir = state.back === 'ar' ? 'rtl' : 'ltr';
+    assembly.setAttribute('role', 'group'); assembly.setAttribute('aria-label', t('assembledSentence'));
+    assembly.setAttribute('aria-live', 'polite');
+    if (!selected.size) {
+      const hint = document.createElement('span'); hint.className = 'tile-hint'; hint.textContent = t('selectSentenceChunks');
+      assembly.append(hint);
+    }
+    for (const id of state.sentenceSelection) {
+      const tile = state.sentenceTiles.find(entry => entry.id === id);
+      const button = document.createElement('button'); button.type = 'button'; button.className = 'letter-tile sentence-chunk placed';
+      setTerm(button, tile.text, state.back);
+      button.setAttribute('aria-label', t('removeSentenceChunk', { chunk: tile.text }));
+      button.disabled = state.locked;
+      button.addEventListener('click', () => {
+        state.sentenceSelection = state.sentenceSelection.filter(value => value !== id);
+        clearSpellingFeedback(); renderSentenceOrder(id);
+      });
+      assembly.append(button);
+    }
+    const tray = document.createElement('div'); tray.className = 'tile-tray sentence-tray';
+    tray.lang = state.back; tray.dir = state.back === 'ar' ? 'rtl' : 'ltr';
+    tray.setAttribute('role', 'group'); tray.setAttribute('aria-label', t('availableSentenceChunks'));
+    for (const tile of state.sentenceTiles) {
+      const button = document.createElement('button'); button.type = 'button'; button.className = 'letter-tile sentence-chunk';
+      button.dataset.sentenceTileId = String(tile.id);
+      setTerm(button, tile.text, state.back);
+      button.setAttribute('aria-label', t('addSentenceChunk', { chunk: tile.text }));
+      button.disabled = state.locked || selected.has(tile.id);
+      button.addEventListener('click', () => {
+        state.sentenceSelection.push(tile.id);
+        clearSpellingFeedback(); renderSentenceOrder(state.sentenceSelection.length === state.sentenceTiles.length ? 'check' : null);
+      });
+      tray.append(button);
+    }
+    const controls = document.createElement('div'); controls.className = 'tile-controls';
+    const clear = document.createElement('button'); clear.type = 'button'; clear.className = 'button button-secondary';
+    clear.textContent = t('clearSentence'); clear.disabled = state.locked || !selected.size;
+    clear.addEventListener('click', () => { state.sentenceSelection = []; clearSpellingFeedback(); renderSentenceOrder(); });
+    const check = document.createElement('button'); check.type = 'button'; check.className = 'button button-primary';
+    check.textContent = t('check'); check.disabled = state.locked || selected.size !== state.sentenceTiles.length;
+    check.addEventListener('click', () => {
+      if (state.locked) return;
+      const item = state.items[state.index];
+      const expected = item.sentences[state.back].join(' ');
+      const answer = state.sentenceSelection.map(id => state.sentenceTiles.find(tile => tile.id === id).text).join(' ');
+      const correct = games.sameAnswer(answer, expected, state.back);
+      if (!correct && ++state.attemptsThisItem < 2) {
+        retrySpelling(check); check.focus(); return;
+      }
+      state.locked = true;
+      if (correct) state.score += 1;
+      for (const button of options.querySelectorAll('button')) button.disabled = true;
+      const output = byId('challenge-feedback');
+      output.className = `challenge-feedback ${correct ? 'positive' : 'negative'}`;
+      if (correct) output.textContent = t('correct');
+      else {
+        const label = document.createElement('span'); label.textContent = `${t('sentenceAnswerLabel')} `;
+        const sentence = document.createElement('strong'); setTerm(sentence, expected, state.back);
+        output.replaceChildren(label, sentence);
+      }
+      effects.animate(check, correct ? 'correct' : 'wrong'); effects.play(correct ? 'correct' : 'wrong');
+      byId('challenge-score').textContent = t('score', { score: state.score });
+      prepareNext();
+    });
+    controls.append(clear, check); options.append(assembly, tray, controls);
+    const focus = focusTile === 'check' ? check
+      : focusTile === null ? tray.querySelector('button:not(:disabled)')
+      : [...tray.querySelectorAll('button')].find(button => button.dataset.sentenceTileId === String(focusTile));
+    if (focus && !focus.disabled) focus.focus();
   }
 
   function renderTiles(focusTile = null) {
