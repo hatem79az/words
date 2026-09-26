@@ -22,7 +22,8 @@ Download the repository as a ZIP, extract it, and open `index.html` in a current
 - Sentence completion uses those same examples. In **Example sentences**, choose one existing word or phrase chunk as the gap in a language; its text becomes the approved answer, with terminal sentence punctuation left visible. Add an example in the other selected language as the clue. The learner sees that clue and the answer-language sentence with one blank, types the missing chunk, and gets one retry before the answer is shown. Identical visible questions are excluded.
 - A saved lesson shows learner progress below practice: completed rounds, scored answers, and the five most recent attempts with localized activity, language direction, result, and time. Completing a flashcard pass records cards viewed without treating them as scored answers. **Clear progress** removes that lesson's local results after confirmation. Deleting a lesson removes its results; a duplicated lesson starts fresh.
 - Attach one picture to a word and optional pronunciation recordings for each language. WebP, PNG, and JPG images are copied into the lesson as resized WebP. Audio may be MP3, WAV, OGG, WebM, or M4A when the browser supports that file. The original files stay in place.
-- Hear short local feedback cues for answers and mute them at any time. A completed round has a brief, decorative confetti burst; reduced-motion system preferences suppress it and other motion without hiding the result.
+- Hear short bundled feedback cues for answers and mute them at any time. If an audio file cannot play, the existing synthesized tone is used. A completed round has an immediate text result, a brief score count-up and confetti burst; reduced-motion system preferences skip those animations without hiding the result.
+- Local heading typography, a sound icon, and decorative illustrations load with the app and do not require a network connection. Polish and German letters are included in the font; other scripts use the system font.
 - Change the interface language. Arabic uses a right-to-left layout; individual term fields retain their correct writing direction.
 - Export all lessons with embedded media to one JSON file and import it on this or another computer. Older version 1–5 exports migrate on import.
 
@@ -35,16 +36,21 @@ Learner progress is stored separately in this browser's localStorage, with the m
 ```text
 index.html       Main screen and accessible controls
 css/style.css    Responsive and RTL styling
+assets/audio/    Original short MP3 feedback cues
+assets/fonts/    Local Baloo 2 Latin display font and OFL license
+assets/illustrations/  Decorative SVG empty-state artwork
 js/model.js      Versioned lesson data, validation, and flashcard selection
 js/i18n.js       English, Polish, Arabic, and German interface strings
 js/games.js      Shared game eligibility, choices, matching rounds, spelling comparison
-js/effects.js    Local feedback sound and reduced-motion-aware animation
+js/effects.js    Bundled sound with oscillator fallback and reduced-motion-aware animation
 js/media.js      Image conversion, audio import, and explicit playback
 js/storage.js    IndexedDB working copy and legacy cache fallback
 js/progress.js   Separate local learner results and summaries
 js/app.js        Browser interactions and local file import/export
 tests/           Data model checks (development only)
+tools/           Optional script for regenerating feedback MP3 files
 docs/            Build plan, activity inventory, and interaction/visual follow-up
+ATTRIBUTIONS.md  Asset origins and licenses
 NEXT_JOB.md      The next concrete task, updated with every merged app change
 ```
 
@@ -65,7 +71,7 @@ The version 6 collection has an `assets` object. Each asset contains a MIME type
 
 ## Development
 
-There are no runtime dependencies or build step. The local model checks can be run with `node --test tests/*.test.cjs` if Node.js is installed. Open `index.html` in the intended Windows browser to review the interface and media import/export.
+There are no runtime dependencies or build step. The local model checks can be run with `node --test tests/*.test.cjs` if Node.js is installed. The optional audio regeneration script requires Python and FFmpeg with MP3 encoding. Open `index.html` in the intended Windows browser to review the interface and media import/export.
 
 ## Next stage
 

@@ -37,7 +37,7 @@
           <button id="new-lesson" class="button button-primary" type="button" data-i18n="newLesson">New lesson</button>
         </div>
         <ul id="lesson-list" class="lesson-list" aria-label="Lessons"></ul>
-        <p id="empty-library" class="muted" data-i18n="emptyLibrary">Create your first lesson to begin.</p>
+        <div id="empty-library" class="empty-library muted"><img src="assets/illustrations/empty-library.svg" alt=""><p data-i18n="emptyLibrary">Create your first lesson to begin.</p></div>
         <div class="library-actions">
           <button id="export-library" class="button button-secondary" type="button" data-i18n="exportLibrary">Export lessons</button>
           <button id="import-trigger" class="button button-secondary" type="button" data-i18n="importLibrary">Import lessons</button>
@@ -78,7 +78,7 @@
         </div>
 
         <div id="practice" class="panel" hidden>
-          <div class="panel-heading"><div><p class="eyebrow" data-i18n="practice">Practice</p><h2 data-i18n="chooseActivity">Choose an activity</h2></div><button id="sound-toggle" class="button button-quiet" type="button" aria-pressed="false">Sound on</button></div>
+          <div class="panel-heading"><div><p class="eyebrow" data-i18n="practice">Practice</p><h2 data-i18n="chooseActivity">Choose an activity</h2></div><button id="sound-toggle" class="button button-quiet" type="button" aria-pressed="false"><svg class="sound-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="sound-waves" d="M16 9a5 5 0 0 1 0 6m2-9a9 9 0 0 1 0 12"/><path class="sound-slash" d="M17 10l5 5m0-5l-5 5"/></svg><span id="sound-label">Sound on</span></button></div>
           <div class="practice-settings">
             <label for="front-language" data-i18n="frontLanguage">Front language</label>
             <select id="front-language"></select>
@@ -128,6 +128,7 @@
             <p id="challenge-feedback" class="challenge-feedback" role="status" aria-live="polite"></p>
             <button id="challenge-next" class="button button-primary" type="button" data-i18n="next" hidden>Next card</button>
           </div>
+          <template id="completion-icon-template"><svg class="completion-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" aria-hidden="true"><path d="M15 8h18v9c0 8-4 13-9 13s-9-5-9-13V8Z" fill="#ffe5a6"/><path d="M15 12H8v4c0 5 3 8 9 8m16-12h7v4c0 5-3 8-9 8M24 30v7m-8 4h16m-13-4h10v4H19z"/><path d="m24 12 1.4 3.1 3.4.4-2.5 2.4.6 3.3-2.9-1.6-2.9 1.6.6-3.3-2.5-2.4 3.4-.4z" fill="#eab853" stroke="none"/></svg></template>
           <section id="lesson-progress" class="lesson-progress" aria-labelledby="progress-title" hidden>
             <div class="section-heading">
               <h3 id="progress-title" data-i18n="learnerProgress">Learner progress</h3>

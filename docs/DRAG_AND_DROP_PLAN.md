@@ -7,7 +7,7 @@ Status: implemented in code; Windows offline browser acceptance remains open in 
 - Letter tiles and Sentence order accept native desktop mouse drags. A tile can move from the tray into any assembly position, be reordered, or be dragged back to the tray. Repeated letters and sentence chunks retain distinct IDs.
 - The existing click/touch and keyboard button actions remain available. Dragging is additional; there is no touch drag gesture.
 - The shared helper in `js/app.js` uses each tile's rendered rectangle to choose an insertion position on wrapped rows. It compares horizontal midpoints in the container's actual LTR or RTL direction, then removes the source before reinserting it. The insertion line and target tint show where the tile will land.
-- Disabled tiles and checked rounds cannot start a drag or receive a drop. `dragstart` writes `text/plain` data for native browser interoperability; the drop also requires a drag started in the current activity. Re-rendering moves focus to the tile at its new location.
+- Disabled tiles and checked rounds cannot start a drag or receive a drop. Checking an answer also clears the tiles' `draggable` property and grab cursor. `dragstart` writes `text/plain` data for native browser interoperability; the drop also requires a drag started in the current activity. Re-rendering moves focus to the tile at its new location.
 - Changes to a selection clear provisional spelling feedback, just as click changes do. The game rules and saved lesson format are untouched.
 
 ## Acceptance still needed on the intended Windows browser

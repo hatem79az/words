@@ -1,14 +1,23 @@
 (function (root) {
   'use strict';
   const STORAGE_KEY = 'words.sound.v1';
+  const SAMPLE_PATHS = { correct: 'assets/audio/correct.mp3', wrong: 'assets/audio/wrong.mp3',
+    complete: 'assets/audio/complete-fanfare.mp3' };
   let muted = false;
   let audio = null;
+  const samples = new Map();
+  const activeSamples = new Set();
   try { muted = localStorage.getItem(STORAGE_KEY) === 'muted'; } catch (_) { /* optional preference */ }
 
   function isMuted() { return muted; }
 
   function setMuted(value) {
     muted = Boolean(value);
+    if (muted) {
+      for (const sample of activeSamples) sample.pause();
+      activeSamples.clear();
+      if (audio && audio.state === 'running') audio.suspend().catch(() => {});
+    }
     try { localStorage.setItem(STORAGE_KEY, muted ? 'muted' : 'on'); } catch (_) { /* optional preference */ }
   }
 
@@ -24,7 +33,7 @@
     oscillator.start(start); oscillator.stop(start + duration + 0.01);
   }
 
-  function play(kind) {
+  function playTone(kind) {
     if (muted) return;
     const AudioCtor = root.AudioContext || root.webkitAudioContext;
     if (!AudioCtor) return;
@@ -44,6 +53,30 @@
         tone(audio, 246.94, at + 0.075, 0.16, 0.02, 'triangle');
       }
     } catch (_) { /* sound must never prevent the game from working */ }
+  }
+
+  function play(kind) {
+    if (muted || !SAMPLE_PATHS[kind]) return;
+    if (!root.Audio) { playTone(kind); return; }
+    try {
+      if (!samples.has(kind)) {
+        const source = new root.Audio(SAMPLE_PATHS[kind]);
+        source.preload = 'auto';
+        samples.set(kind, source);
+      }
+      const instance = samples.get(kind).cloneNode(true);
+      activeSamples.add(instance);
+      let failed = false;
+      const fallback = () => {
+        if (failed) return;
+        failed = true;
+        if (activeSamples.delete(instance)) playTone(kind);
+      };
+      instance.addEventListener('ended', () => activeSamples.delete(instance), { once: true });
+      instance.addEventListener('error', fallback, { once: true });
+      const started = instance.play();
+      if (started && started.catch) started.catch(fallback);
+    } catch (_) { playTone(kind); }
   }
 
   function animate(element, kind) {

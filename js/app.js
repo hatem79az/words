@@ -22,6 +22,7 @@
   let mediaPending = 0;
   let uiLanguage = 'en';
   let history = [];
+  let scoreAnimation = 0;
 
   function t(key, params = {}) {
     let value = (i18n.strings[uiLanguage] && i18n.strings[uiLanguage][key]) || i18n.strings.en[key] || key;
@@ -650,7 +651,7 @@
   function updateSoundButton() {
     const button = byId('sound-toggle');
     button.setAttribute('aria-pressed', String(effects.isMuted()));
-    button.textContent = t(effects.isMuted() ? 'soundOff' : 'soundOn');
+    byId('sound-label').textContent = t(effects.isMuted() ? 'soundOff' : 'soundOn');
   }
 
   function renderReadiness() {
@@ -793,6 +794,8 @@
   function renderChallenge() {
     if (!challenge) return;
     const state = challenge;
+    scoreAnimation += 1;
+    byId('challenge-score').removeAttribute('aria-hidden');
     byId('challenge-area').classList.remove('round-finished');
     byId('challenge-area').querySelector('.celebration-confetti')?.remove();
     state.locked = false;
@@ -1119,7 +1122,10 @@
       }
       state.locked = true;
       if (correct) state.score += 1;
-      for (const button of options.querySelectorAll('button')) button.disabled = true;
+      for (const button of options.querySelectorAll('button')) {
+        button.disabled = true;
+        button.draggable = false;
+      }
       const output = byId('challenge-feedback');
       output.className = `challenge-feedback ${correct ? 'positive' : 'negative'}`;
       if (correct) output.textContent = t('correct');
@@ -1510,7 +1516,10 @@
     if (correct) state.score += 1;
     if (state.mode === 'listenType') media.stop();
     if (state.mode === 'tiles') {
-      for (const button of byId('challenge-options').querySelectorAll('button')) button.disabled = true;
+      for (const button of byId('challenge-options').querySelectorAll('button')) {
+        button.disabled = true;
+        button.draggable = false;
+      }
     } else byId('typing-answer').disabled = true;
     feedback(correct, element, state.mode === 'sentenceCompletion' ? expected : state.items[state.index].terms[state.back]);
     if (state.mode === 'sentenceCompletion') {
@@ -1841,6 +1850,7 @@
     byId('challenge-next').hidden = true;
     byId('challenge-progress').textContent = '';
     byId('challenge-prompt').textContent = t('roundComplete');
+    byId('challenge-prompt').prepend(byId('completion-icon-template').content.firstElementChild.cloneNode(true));
     byId('challenge-prompt').removeAttribute('lang'); byId('challenge-prompt').removeAttribute('dir');
     byId('challenge-feedback').className = 'challenge-feedback positive';
     byId('challenge-feedback').textContent = state.mode === 'memory'
@@ -1848,7 +1858,24 @@
       : state.mode === 'matching'
       ? t('matchResults', { attempts: state.attempts })
       : t('finalScore', { score: state.score, total });
-    byId('challenge-score').textContent = '';
+    const scoreDisplay = byId('challenge-score');
+    scoreDisplay.setAttribute('aria-hidden', 'true'); // final score is already in the live feedback text
+    const displayScore = value => { scoreDisplay.textContent = t('score', { score: value }); };
+    const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reducedMotion || !window.requestAnimationFrame || !state.score) displayScore(state.score);
+    else {
+      const animation = ++scoreAnimation;
+      let started = null;
+      displayScore(0);
+      const count = now => {
+        if (animation !== scoreAnimation || !scoreDisplay.isConnected) return;
+        if (started === null) started = now;
+        const fraction = Math.min(1, (now - started) / 600);
+        displayScore(Math.round(state.score * (1 - (1 - fraction) ** 3)));
+        if (fraction < 1) window.requestAnimationFrame(count);
+      };
+      window.requestAnimationFrame(count);
+    }
     effects.animate(byId('challenge-prompt'), 'correct');
     effects.play('complete');
     effects.celebrate(byId('challenge-area'));
