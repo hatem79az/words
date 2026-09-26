@@ -7,6 +7,7 @@
   let audio = null;
   const samples = new Map();
   const activeSamples = new Set();
+  const activeTones = new Set();
   try { muted = localStorage.getItem(STORAGE_KEY) === 'muted'; } catch (_) { /* optional preference */ }
 
   function isMuted() { return muted; }
@@ -16,6 +17,12 @@
     if (muted) {
       for (const sample of activeSamples) sample.pause();
       activeSamples.clear();
+      for (const tone of activeTones) {
+        tone.oscillator.stop();
+        tone.oscillator.disconnect();
+        tone.gain.disconnect();
+      }
+      activeTones.clear();
       if (audio && audio.state === 'running') audio.suspend().catch(() => {});
     }
     try { localStorage.setItem(STORAGE_KEY, muted ? 'muted' : 'on'); } catch (_) { /* optional preference */ }
@@ -30,6 +37,12 @@
     gain.gain.exponentialRampToValueAtTime(volume, start + 0.018);
     gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
     oscillator.connect(gain); gain.connect(ctx.destination);
+    const active = { oscillator, gain };
+    activeTones.add(active);
+    oscillator.onended = () => {
+      activeTones.delete(active);
+      oscillator.disconnect(); gain.disconnect();
+    };
     oscillator.start(start); oscillator.stop(start + duration + 0.01);
   }
 

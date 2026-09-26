@@ -2,6 +2,7 @@
   'use strict';
   const strings = {
     en: {
+      practiceLanguageChanged: 'Interface language changed. Start the activity again.',
       skip: 'Skip to content', interfaceLanguage: 'Interface language', yourCollection: 'Your collection', lessons: 'Lessons', newLesson: 'New lesson',
       emptyLibrary: 'Create your first lesson to begin.', exportLibrary: 'Export lessons', importLibrary: 'Import lessons',
       backupNote: 'Export a JSON backup to keep or move your lessons. Browser storage is only a convenience.', learnYourWay: 'Learn your way',
@@ -111,6 +112,7 @@
       completionAnswer: 'Missing word or phrase', completionBlank: 'Missing word or phrase', completionAnswerLabel: 'Correct answer:'
     },
     pl: {
+      practiceLanguageChanged: 'Zmieniono język interfejsu. Uruchom ćwiczenie ponownie.',
       skip: 'Przejdź do treści', interfaceLanguage: 'Język interfejsu', yourCollection: 'Twoja kolekcja', lessons: 'Lekcje', newLesson: 'Nowa lekcja',
       emptyLibrary: 'Utwórz pierwszą lekcję.', exportLibrary: 'Eksportuj lekcje', importLibrary: 'Importuj lekcje',
       backupNote: 'Eksportuj kopię JSON, aby zachować lub przenieść lekcje. Pamięć przeglądarki jest tylko udogodnieniem.', learnYourWay: 'Ucz się po swojemu',
@@ -220,6 +222,7 @@
       completionAnswer: 'Brakujące słowo lub zwrot', completionBlank: 'Brakujące słowo lub zwrot', completionAnswerLabel: 'Poprawna odpowiedź:'
     },
     ar: {
+      practiceLanguageChanged: 'تغيّرت لغة الواجهة. ابدأ النشاط من جديد.',
       skip: 'انتقل إلى المحتوى', interfaceLanguage: 'لغة الواجهة', yourCollection: 'مجموعتك', lessons: 'الدروس', newLesson: 'درس جديد',
       emptyLibrary: 'أنشئ درسك الأول للبدء.', exportLibrary: 'تصدير الدروس', importLibrary: 'استيراد الدروس',
       backupNote: 'صدّر نسخة JSON للاحتفاظ بدروسك أو نقلها. تخزين المتصفح وسيلة مؤقتة فقط.', learnYourWay: 'تعلّم بطريقتك',
@@ -329,6 +332,7 @@
       completionAnswer: 'الكلمة أو العبارة الناقصة', completionBlank: 'كلمة أو عبارة ناقصة', completionAnswerLabel: 'الإجابة الصحيحة:'
     },
     de: {
+      practiceLanguageChanged: 'Die Sprache der Oberfläche wurde geändert. Starte die Aktivität erneut.',
       skip: 'Zum Inhalt springen', interfaceLanguage: 'Sprache der Oberfläche', yourCollection: 'Deine Sammlung', lessons: 'Lektionen', newLesson: 'Neue Lektion',
       emptyLibrary: 'Erstelle deine erste Lektion.', exportLibrary: 'Lektionen exportieren', importLibrary: 'Lektionen importieren',
       backupNote: 'Exportiere eine JSON-Sicherung, um Lektionen aufzubewahren oder zu übertragen. Der Browserspeicher ist nur eine Hilfe.', learnYourWay: 'Lerne auf deine Weise',

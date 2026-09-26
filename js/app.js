@@ -20,13 +20,14 @@
   let challenge = null;
   let draftAssets = {};
   let mediaPending = 0;
+  let cachePending = 0;
   let uiLanguage = 'en';
   let history = [];
   let scoreAnimation = 0;
 
   function t(key, params = {}) {
     let value = (i18n.strings[uiLanguage] && i18n.strings[uiLanguage][key]) || i18n.strings.en[key] || key;
-    for (const [name, replacement] of Object.entries(params)) value = value.replace(`{${name}}`, String(replacement));
+    for (const [name, replacement] of Object.entries(params)) value = value.replace(`{${name}}`, () => String(replacement));
     return value;
   }
 
@@ -53,7 +54,11 @@
     renderList();
   }
 
-  function saveCache() { return storage.save(collection); }
+  async function saveCache() {
+    cachePending += 1;
+    try { return await storage.save(collection); }
+    finally { cachePending -= 1; }
+  }
 
   async function restoreCache() {
     try {
@@ -502,15 +507,9 @@
       const referenced = new Set(updated.items.flatMap(item => [item.media.image, ...Object.values(item.media.audio)]).filter(Boolean));
       const additions = Object.fromEntries(Object.entries(draftAssets).filter(([assetId]) => referenced.has(assetId)));
       collection = model.saveLesson(collection, updated, additions);
-      draft = model.validateLesson(updated);
-      draftAssets = {};
-      currentId = draft.id;
-      dirty = false;
-      byId('editor-title').textContent = draft.title;
-      byId('duplicate-lesson').hidden = false;
-      byId('delete-lesson').hidden = false;
-      byId('practice').hidden = false;
-      resetDeck(); renderList(); renderReadiness(); renderProgress(); message(await saveCache() ? 'saved' : 'storageFull');
+      // Keep editor rows and media references aligned with the normalized saved lesson.
+      openLesson(updated.id);
+      message(await saveCache() ? 'saved' : 'storageFull');
     } catch (error) { message(error.message in i18n.strings.en ? error.message : 'invalidLesson'); }
   }
 
@@ -518,21 +517,27 @@
     if (!confirmDiscard()) return;
     const original = collection.lessons.find(lesson => lesson.id === currentId);
     if (!original) return;
-    const copy = model.duplicateLesson(original);
-    copy.title = `${copy.title} (${t('duplicateSuffix')})`;
-    collection = model.saveLesson(collection, copy);
-    const cached = await saveCache(); openLesson(copy.id); message(cached ? 'duplicated' : 'storageFull');
+    try {
+      const copy = model.duplicateLesson(original);
+      const suffix = ` (${t('duplicateSuffix')})`;
+      copy.title = `${copy.title.slice(0, 120 - suffix.length).trimEnd()}${suffix}`;
+      collection = model.saveLesson(collection, copy);
+      openLesson(copy.id);
+      message(await saveCache() ? 'duplicated' : 'storageFull');
+    } catch (error) { message(error.message in i18n.strings.en ? error.message : 'invalidLesson'); }
   }
 
   async function removeLesson() {
     if (!currentId || !window.confirm(t('confirmDelete'))) return;
     resetDeck();
     collection = model.pruneAssets({ ...collection, lessons: collection.lessons.filter(lesson => lesson.id !== currentId) });
-    const cached = await saveCache();
     const progressSaved = pruneProgress();
     draft = null; draftAssets = {}; currentId = null; dirty = false; deck = [];
+    byId('item-list').replaceChildren(); byId('category-list').replaceChildren();
     byId('editor').hidden = true; byId('practice').hidden = true; byId('welcome').hidden = false;
-    renderList(); renderProgress(); message(!cached ? 'storageFull' : progressSaved ? 'deleted' : 'progressStorageUnavailable');
+    renderList(); renderProgress();
+    const cached = await saveCache();
+    message(!cached ? 'storageFull' : progressSaved ? 'deleted' : 'progressStorageUnavailable');
   }
 
   function exportLibrary() {
@@ -551,15 +556,19 @@
     const file = event.target.files[0];
     event.target.value = '';
     if (!file) return;
-    if (file.size > 36_000_000) { message('fileTooLarge'); return; }
+    if (file.size > model.MAX_FILE_BYTES) { message('fileTooLarge'); return; }
     let imported;
     try { imported = model.validateCollection(JSON.parse(await file.text())); }
     catch (error) { message(error.message in i18n.strings.en ? error.message : 'invalidFile'); return; }
     if (!window.confirm(t('confirmImport'))) return;
-    media.stop(); collection = imported; draft = null; draftAssets = {}; currentId = null; dirty = false;
-    const cached = await saveCache(); const progressSaved = pruneProgress(); renderList();
+    resetDeck(); collection = imported; draft = null; draftAssets = {}; currentId = null; dirty = false;
+    const progressSaved = pruneProgress(); renderList();
     if (collection.lessons.length) openLesson(collection.lessons[0].id);
-    else { byId('editor').hidden = true; byId('practice').hidden = true; byId('welcome').hidden = false; renderProgress(); }
+    else {
+      byId('item-list').replaceChildren(); byId('category-list').replaceChildren();
+      byId('editor').hidden = true; byId('practice').hidden = true; byId('welcome').hidden = false; renderProgress();
+    }
+    const cached = await saveCache();
     message(!cached ? 'storageFull' : progressSaved ? 'imported' : 'progressStorageUnavailable');
   }
 
@@ -576,6 +585,8 @@
 
   function resetDeck() {
     media.stop();
+    scoreAnimation += 1;
+    byId('challenge-area').querySelector('.celebration-confetti')?.remove();
     if (challenge?.memory?.timer) clearTimeout(challenge.memory.timer);
     deck = []; cardIndex = 0; byId('card-area').hidden = true;
     challenge = null; byId('challenge-area').hidden = true;
@@ -988,7 +999,8 @@
     if (!items.length) return { index: 0, button: null, side: null };
     const distance = item => Math.max(item.rect.top - clientY, 0, clientY - item.rect.bottom);
     const closest = items.reduce((best, item) => distance(item) < distance(best) ? item : best);
-    const row = items.filter(item => Math.abs(item.middleY - closest.middleY) < 2);
+    // Hover/press transforms move individual tiles a few pixels within their flex row.
+    const row = items.filter(item => Math.max(item.rect.top, closest.rect.top) < Math.min(item.rect.bottom, closest.rect.bottom));
     const rtl = container.dir === 'rtl';
     const before = row.find(item => rtl ? clientX > item.middleX : clientX < item.middleX);
     if (before) return { index: before.index, button: before.button, side: 'before' };
@@ -1890,7 +1902,10 @@
     fillLanguages(); translationPass();
     if (collection.lessons.length) openLesson(collection.lessons[0].id);
     byId('ui-language').addEventListener('change', event => {
+      const wasPlaying = Boolean(deck.length || challenge);
+      resetDeck();
       uiLanguage = event.target.value; translationPass();
+      if (wasPlaying) byId('practice-message').textContent = t('practiceLanguageChanged');
       try { localStorage.setItem(UI_KEY, uiLanguage); } catch (_) { /* export remains available */ }
     });
     byId('new-lesson').addEventListener('click', newLesson);
@@ -1937,7 +1952,7 @@
     });
     byId('play-card-front').addEventListener('click', () => playCardAudio('front-language'));
     byId('play-card-back').addEventListener('click', () => playCardAudio('back-language'));
-    window.addEventListener('beforeunload', event => { if (dirty) { event.preventDefault(); event.returnValue = ''; } });
+    window.addEventListener('beforeunload', event => { if (dirty || mediaPending || cachePending) { event.preventDefault(); event.returnValue = ''; } });
   }
   initialize();
 })();
