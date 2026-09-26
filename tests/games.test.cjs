@@ -40,6 +40,27 @@ test('category sort uses saved groups with two unique pairs each in the answer l
   assert.equal(games.categorySortPlan(value, 'ar', 'de'), null);
 });
 
+test('sentence order uses distinct authored examples and shuffles repeated chunks by identity', () => {
+  const value = lesson(3);
+  value.items[0].sentences.en = ['I', 'see', 'a cat.'];
+  value.items[0].sentences.ar = ['أنا', 'أرى', 'قطة.'];
+  value.items[1].sentences.en = ['I', 'see', 'a dog.'];
+  value.items[1].sentences.ar = ['قطة', 'و', 'قطة', 'هنا.'];
+  value.items[2].sentences.en = ['I', 'see', 'a cat.'];
+  value.items[2].sentences.ar = ['أنا', 'أرى', 'كلبًا.'];
+  assert.equal(games.readiness(value, 'en', 'ar').sentenceOrder, 1);
+  const pairs = games.sentenceOrderPairs(value, 'en', 'ar');
+  assert.deepEqual(pairs.map(item => item.id), [value.items[1].id]);
+  const tiles = games.sentenceTileOrder(pairs[0].sentences.ar, 'ar', () => .999);
+  assert.equal(tiles.length, 4);
+  assert.equal(new Set(tiles.map(tile => tile.id)).size, 4);
+  assert.notDeepEqual(tiles.map(tile => tile.text), pairs[0].sentences.ar);
+  assert.equal(tiles.filter(tile => tile.text === 'قطة').length, 2);
+  assert.equal(games.sameAnswer('قطة و قطة هنا.', 'قطة و قطة هنا.', 'ar'), true);
+  assert.equal(games.sameAnswer('قطة و قطة هنا', 'قطة و قطة هنا.', 'ar'), false);
+  assert.throws(() => games.sentenceTileOrder(['same', 'same', 'same'], 'en'), /invalidSentences/);
+});
+
 test('ambiguous repeated prompts and answers are excluded from recognition games', () => {
   const value = lesson(6);
   value.items[1].terms.en = value.items[0].terms.en;

@@ -123,6 +123,11 @@ h3 { margin-bottom: 0; font-size: 1.08rem; }
 .category-row .button { margin-top: .5rem; }
 .item-category-label { display: grid; gap: .35rem; max-width: 24rem; margin-top: .9rem; font-size: .84rem; font-weight: 750; }
 .item-category-label select { width: 100%; }
+.sentence-editor { margin-top: .9rem; background: #f8fafc; border: 1px solid #dae3ed; border-radius: .9rem; }
+.sentence-editor summary { padding: .85rem 1rem; color: var(--teal); font-weight: 800; cursor: pointer; }
+.sentence-editor summary:hover { background: #edf7f5; }
+.sentence-editor-body { padding: .1rem 1rem 1rem; }
+.sentence-editor-body p { margin-bottom: .7rem; }
 .media-hint { padding: .75rem 1rem; margin: .8rem 0 0; color: #3b6370; background: #eef8f5; border: 1px solid #d9eee8; border-radius: .85rem; font-size: .87rem; }
 .media-editor { margin-top: 1rem; background: #f8fafc; border: 1px solid #dae3ed; border-radius: .9rem; }
 .media-editor summary { padding: .85rem 1rem; color: var(--teal); font-weight: 800; cursor: pointer; border-radius: .85rem; }
@@ -219,6 +224,7 @@ h3 { margin-bottom: 0; font-size: 1.08rem; }
 .game-option.correct, .game-option.matched { color: #14593b; background: #e7f7ec; border-color: #3e966b; }
 .game-option.wrong { color: #8b273b; background: #fff0f1; border-color: #c85365; }
 .tile-options { display: grid; gap: 1rem; }
+.sentence-order-options { display: grid; gap: 1rem; }
 .tile-assembly, .tile-tray {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .5rem;
   min-height: 86px; padding: .85rem; border-radius: 1rem;
@@ -235,6 +241,7 @@ h3 { margin-bottom: 0; font-size: 1.08rem; }
 .letter-tile:hover:not(:disabled) { transform: translateY(-3px); border-color: #6b55dc; box-shadow: 0 9px 17px rgba(80, 65, 180, .13); }
 .letter-tile.placed { color: #fff; background: #5142bf; border-color: #5142bf; animation: tile-in .2s ease-out; }
 .letter-tile.placed:hover:not(:disabled) { border-color: #3b2e98; }
+.sentence-chunk { max-width: 100%; min-height: 52px; font-size: 1rem; line-height: 1.3; text-align: center; overflow-wrap: anywhere; white-space: normal; }
 .tile-assembly .letter-tile:disabled { opacity: 1; }
 .tile-controls { display: flex; justify-content: center; flex-wrap: wrap; gap: .65rem; }
 .spelling-pattern {

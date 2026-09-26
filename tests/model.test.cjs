@@ -45,13 +45,14 @@ test('invalid imports are rejected before they replace existing lessons', () => 
   assert.equal(valid.lessons[0].items[0].terms.pl, 'kot');
 });
 
-test('old text-only exports migrate to version 4 without losing terms', () => {
+test('old text-only exports migrate to version 5 without losing terms', () => {
   const oldLesson = lesson();
   oldLesson.items.forEach(item => { item.media = { image: null, audio: null }; });
   const upgraded = model.validateCollection({ schemaVersion: 1, lessons: [oldLesson] });
-  assert.equal(upgraded.schemaVersion, 4);
+  assert.equal(upgraded.schemaVersion, 5);
   assert.deepEqual(upgraded.lessons[0].categories, []);
   assert.equal(upgraded.lessons[0].items[0].categoryId, null);
+  assert.deepEqual(upgraded.lessons[0].items[0].sentences.en, []);
   assert.deepEqual(upgraded.assets, {});
   assert.equal(upgraded.lessons[0].items[0].terms.ar, 'قطة');
   assert.deepEqual(upgraded.lessons[0].items[0].media.audio, {});
@@ -83,7 +84,7 @@ test('picture markers survive save, export, older import, and duplicate with rem
   ];
   const assets = { scene: { mime: 'image/webp', data: 'data:image/webp;base64,UklGRg==' } };
   const saved = model.saveLesson(model.newCollection(), value, assets);
-  assert.equal(saved.schemaVersion, 4);
+  assert.equal(saved.schemaVersion, 5);
   assert.deepEqual(model.validateCollection(JSON.parse(JSON.stringify(saved))), saved);
   const copy = model.duplicateLesson(saved.lessons[0]);
   assert.deepEqual(copy.items[0].media.hotspots.map(point => point.itemId), [copy.items[1].id, copy.items[2].id]);
@@ -92,7 +93,7 @@ test('picture markers survive save, export, older import, and duplicate with rem
   previous.schemaVersion = 2;
   previous.lessons[0].items.forEach(item => { delete item.media.hotspots; });
   const migrated = model.validateCollection(previous);
-  assert.equal(migrated.schemaVersion, 4);
+  assert.equal(migrated.schemaVersion, 5);
   assert.deepEqual(migrated.lessons[0].items[0].media.hotspots, []);
 });
 
@@ -129,6 +130,38 @@ test('categories reject missing names, ambiguous names, and broken memberships',
   value.items[0].categoryId = 'a';
   value.categories[1].names.en = '';
   assert.throws(() => model.validateLesson(value), /invalidCategories/);
+});
+
+test('sentence chunks survive save, export, duplicate, and version 4 migration', () => {
+  const value = lesson();
+  value.items[0].sentences.en = ['I', 'see', 'a cat.'];
+  value.items[0].sentences.pl = ['Widzę', 'małego', 'kota.'];
+  value.items[0].sentences.ar = ['أنا', 'أرى', 'قطة.'];
+  value.items[0].sentences.de = ['Ich', 'sehe', 'eine Katze.'];
+  const saved = model.saveLesson(model.newCollection(), value);
+  assert.deepEqual(model.validateCollection(JSON.parse(JSON.stringify(saved))), saved);
+  const copy = model.duplicateLesson(saved.lessons[0]);
+  copy.items[0].sentences.ar[0] = 'نحن';
+  assert.equal(saved.lessons[0].items[0].sentences.ar[0], 'أنا');
+  const prior = structuredClone(saved); prior.schemaVersion = 4;
+  prior.lessons[0].items.forEach(item => { delete item.sentences; });
+  const migrated = model.validateCollection(prior);
+  assert.deepEqual(migrated.lessons[0].items[0].sentences, { en: [], pl: [], ar: [], de: [] });
+  assert.equal(migrated.lessons[0].items[0].categoryId, null);
+});
+
+test('sentence chunks reject incomplete, empty, overly long, and delimiter content', () => {
+  const value = lesson();
+  value.items[0].sentences.en = ['I', 'see'];
+  assert.throws(() => model.validateLesson(value), /invalidSentences/);
+  value.items[0].sentences.en = ['I', '', 'a cat.'];
+  assert.throws(() => model.validateLesson(value), /invalidSentences/);
+  value.items[0].sentences.en[1] = 'see|you';
+  assert.throws(() => model.validateLesson(value), /invalidSentences/);
+  value.items[0].sentences.en[1] = 'x'.repeat(81);
+  assert.throws(() => model.validateLesson(value), /invalidSentences/);
+  value.items[0].sentences.en[1] = 'see';
+  assert.deepEqual(model.validateLesson(value).items[0].sentences.en, ['I', 'see', 'a cat.']);
 });
 
 test('picture markers reject missing images, broken references, overlapping or invalid positions', () => {

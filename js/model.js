@@ -5,7 +5,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  const SCHEMA_VERSION = 4;
+  const SCHEMA_VERSION = 5;
   const LANGUAGES = Object.freeze(['en', 'pl', 'ar', 'de']);
   const MAX_LESSONS = 500;
   const MAX_ITEMS = 500;
@@ -40,6 +40,7 @@
 
   function createItem() {
     return { id: id(), terms: { en: '', pl: '', ar: '', de: '' }, categoryId: null,
+      sentences: { en: [], pl: [], ar: [], de: [] },
       media: { image: null, audio: {}, hotspots: [] } };
   }
 
@@ -52,6 +53,18 @@
     if (Object.values(terms).filter(Boolean).length < 2) throw new Error('twoLanguages');
     const categoryId = value.categoryId ?? null;
     if (categoryId !== null && (typeof categoryId !== 'string' || !ASSET_ID.test(categoryId))) throw new Error('invalidCategories');
+    const rawSentences = value.sentences ?? {};
+    if (!isObject(rawSentences)) throw new Error('invalidSentences');
+    const sentences = {};
+    for (const language of LANGUAGES) {
+      const chunks = rawSentences[language] ?? [];
+      if (!Array.isArray(chunks) || (chunks.length && (chunks.length < 3 || chunks.length > 12))) throw new Error('invalidSentences');
+      sentences[language] = chunks.map(chunk => {
+        if (typeof chunk !== 'string' || chunk.length > 80 || chunk.includes('|') || !chunk.trim()) throw new Error('invalidSentences');
+        return chunk.trim();
+      });
+      if (sentences[language].join(' ').length > 500) throw new Error('invalidSentences');
+    }
     const media = value.media ?? { image: null, audio: null };
     if (!isObject(media) || (media.image !== null && (typeof media.image !== 'string' || !ASSET_ID.test(media.image))) ||
         (media.audio !== null && !isObject(media.audio))) throw new Error('unsupportedMedia');
@@ -71,7 +84,7 @@
     if (new Set(hotspots.map(point => point.itemId)).size !== hotspots.length ||
         hotspots.some((point, index) => hotspots.slice(index + 1).some(other =>
           Math.hypot(point.x - other.x, point.y - other.y) < HOTSPOT_SPACING))) throw new Error('invalidHotspots');
-    return { id: value.id, terms, categoryId, media: { image: media.image, audio, hotspots } };
+    return { id: value.id, terms, categoryId, sentences, media: { image: media.image, audio, hotspots } };
   }
 
   function validateLesson(value) {
@@ -111,7 +124,7 @@
   }
 
   function validateCollection(value) {
-    if (!isObject(value) || ![1, 2, 3, SCHEMA_VERSION].includes(value.schemaVersion) || !Array.isArray(value.lessons) || value.lessons.length > MAX_LESSONS) {
+    if (!isObject(value) || ![1, 2, 3, 4, SCHEMA_VERSION].includes(value.schemaVersion) || !Array.isArray(value.lessons) || value.lessons.length > MAX_LESSONS) {
       throw new Error('invalidCollection');
     }
     const rawAssets = value.schemaVersion === 1 ? {} : value.assets;
@@ -165,6 +178,7 @@
     copy.categories = original.categories.map(category => ({ id: categoryIds.get(category.id), names: { ...category.names } }));
     copy.items = original.items.map(item => ({ ...item, id: ids.get(item.id), terms: { ...item.terms },
       categoryId: item.categoryId ? categoryIds.get(item.categoryId) : null,
+      sentences: Object.fromEntries(LANGUAGES.map(language => [language, [...item.sentences[language]]])),
       media: { image: item.media.image, audio: { ...item.media.audio },
         hotspots: item.media.hotspots.map(point => ({ ...point, itemId: ids.get(point.itemId) })) } }));
     return copy;
