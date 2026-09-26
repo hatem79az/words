@@ -41,7 +41,7 @@ The release target includes these modes. A language pair means a prompt language
 | Context | Sentence order | Rebuild a short sentence from word chunks. | Teacher-entered example and approved chunk order. |
 | Context | Complete the sentence | Choose or type a missing word in context. | Teacher-entered sentence with a validated gap and answer. |
 
-These 18 modes are the complete phase 1 release list. Timed rounds, a random wheel, and a gameshow look can be optional presentation settings, not separate learning mechanics. The current build includes flashcards, multiple choice, match pairs, memory cards, typed spelling, picture choice, listen and choose, letter tiles, missing letters, listen and type, letter guess, word search, and crossword. The other five rows remain planned work.
+These 18 modes are the complete phase 1 release list. Timed rounds, a random wheel, and a gameshow look can be optional presentation settings, not separate learning mechanics. The current build includes flashcards, multiple choice, match pairs, memory cards, true or false, typed spelling, picture choice, listen and choose, letter tiles, missing letters, listen and type, letter guess, word search, and crossword. The other four rows remain planned work.
 
 ### Language-specific answer rules
 
@@ -78,7 +78,7 @@ Technical references: [Web Animations API](https://developer.mozilla.org/en-US/d
 | 2. Portable media | Image/audio authoring, self-contained JSON import/export, picture choice, listen and choose. | Code is present; Windows browser transfer and offline play remain an open acceptance gate. |
 | 3a. First spelling games | Tiles, missing letters, listen and type. | Code and local Unicode checks are present; Windows browser interaction and RTL visual acceptance remain open. |
 | 3b. More spelling | Letter guess, word search, crossword. | Code and local generator checks are present for all three; Windows browser acceptance remains open. |
-| 4. More practice | Memory, true/false, categories, sentence order, sentence completion, picture labels. | Memory cards has code and local state checks; the other activities remain open. Games use shared data and clearly state their requirements. |
+| 4. More practice | Memory, true/false, categories, sentence order, sentence completion, picture labels. | Memory cards and true/false have code and local checks; the other activities remain open. Games use shared data and clearly state their requirements. |
 | 5. Quality and progress | Learner progress, retries, backups, accessibility, visual/audio polish, complete browser acceptance pass. | All listed activities work offline on Windows in the browser with keyboard support and reduced motion. |
 | 6. Windows wrapper | App icon, local content folder, portable Windows build and second-laptop test. | Click to open; copy lessons/media; play offline; no VS Code or Node.js for the learner. |
 
