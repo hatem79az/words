@@ -6,6 +6,7 @@
   const effects = window.WordsEffects;
   const media = window.WordsMedia;
   const storage = window.WordsStorage;
+  const progress = window.WordsProgress;
   const UI_KEY = 'words.uiLanguage.v1';
   const byId = id => document.getElementById(id);
   let collection = model.newCollection();
@@ -18,6 +19,7 @@
   let draftAssets = {};
   let mediaPending = 0;
   let uiLanguage = 'en';
+  let history = [];
 
   function t(key, params = {}) {
     let value = (i18n.strings[uiLanguage] && i18n.strings[uiLanguage][key]) || i18n.strings.en[key] || key;
@@ -44,6 +46,7 @@
     }
     refreshCategorySelects();
     renderReadiness();
+    renderProgress();
     renderList();
   }
 
@@ -61,6 +64,7 @@
       collection = model.newCollection();
       message('storageUnavailable');
     }
+    history = progress.load();
   }
 
   function confirmDiscard() {
@@ -438,7 +442,7 @@
     byId('item-list').replaceChildren(...draft.items.map(makeItemRow));
     refreshCategorySelects();
     for (const row of byId('item-list').children) renderHotspotEditor(row);
-    resetDeck(); renderList(); renderReadiness();
+    resetDeck(); renderList(); renderReadiness(); renderProgress();
   }
 
   function newLesson() {
@@ -458,7 +462,7 @@
     byId('category-list').replaceChildren();
     byId('item-list').replaceChildren(makeItemRow(model.createItem()));
     refreshCategorySelects();
-    renderList(); byId('lesson-name').focus();
+    renderList(); renderProgress(); byId('lesson-name').focus();
   }
 
   function collectDraft() {
@@ -503,7 +507,7 @@
       byId('duplicate-lesson').hidden = false;
       byId('delete-lesson').hidden = false;
       byId('practice').hidden = false;
-      resetDeck(); renderList(); renderReadiness(); message(await saveCache() ? 'saved' : 'storageFull');
+      resetDeck(); renderList(); renderReadiness(); renderProgress(); message(await saveCache() ? 'saved' : 'storageFull');
     } catch (error) { message(error.message in i18n.strings.en ? error.message : 'invalidLesson'); }
   }
 
@@ -521,9 +525,11 @@
     if (!currentId || !window.confirm(t('confirmDelete'))) return;
     resetDeck();
     collection = model.pruneAssets({ ...collection, lessons: collection.lessons.filter(lesson => lesson.id !== currentId) });
-    const cached = await saveCache(); draft = null; draftAssets = {}; currentId = null; dirty = false; deck = [];
+    const cached = await saveCache();
+    const progressSaved = pruneProgress();
+    draft = null; draftAssets = {}; currentId = null; dirty = false; deck = [];
     byId('editor').hidden = true; byId('practice').hidden = true; byId('welcome').hidden = false;
-    renderList(); message(cached ? 'deleted' : 'storageFull');
+    renderList(); renderProgress(); message(!cached ? 'storageFull' : progressSaved ? 'deleted' : 'progressStorageUnavailable');
   }
 
   function exportLibrary() {
@@ -548,10 +554,10 @@
     catch (error) { message(error.message in i18n.strings.en ? error.message : 'invalidFile'); return; }
     if (!window.confirm(t('confirmImport'))) return;
     media.stop(); collection = imported; draft = null; draftAssets = {}; currentId = null; dirty = false;
-    const cached = await saveCache(); renderList();
+    const cached = await saveCache(); const progressSaved = pruneProgress(); renderList();
     if (collection.lessons.length) openLesson(collection.lessons[0].id);
-    else { byId('editor').hidden = true; byId('practice').hidden = true; byId('welcome').hidden = false; }
-    message(cached ? 'imported' : 'storageFull');
+    else { byId('editor').hidden = true; byId('practice').hidden = true; byId('welcome').hidden = false; renderProgress(); }
+    message(!cached ? 'storageFull' : progressSaved ? 'imported' : 'progressStorageUnavailable');
   }
 
   function fillLanguages() {
@@ -618,6 +624,8 @@
     if (!deck.length) return;
     media.stop();
     if (cardIndex === deck.length - 1) {
+      recordProgress({ lessonId: currentId, mode: 'flashcards', front: byId('front-language').value,
+        back: byId('back-language').value, score: null, total: deck.length, finishedAt: new Date().toISOString() });
       resetCardOnly(); byId('practice-message').textContent = t('endOfDeck');
     } else { cardIndex += 1; showCard(); }
   }
@@ -654,6 +662,55 @@
     byId('activity-readiness').textContent = counts[mode]
       ? t(mode === 'pictureLabels' ? 'readyLabelPictures' : 'readyItems', { count: counts[mode] })
       : t(unavailableReason(mode));
+  }
+
+  function renderProgress() {
+    const panel = byId('lesson-progress');
+    const saved = collection.lessons.find(lesson => lesson.id === currentId);
+    panel.hidden = !saved;
+    if (!saved) return;
+    const summary = progress.summary(history, saved.id);
+    byId('clear-progress').hidden = summary.count === 0;
+    byId('progress-recent-title').hidden = summary.count === 0;
+    byId('progress-summary').textContent = !summary.count ? t('noProgress')
+      : summary.total ? t('progressSummary', { rounds: summary.count, correct: summary.correct, total: summary.total })
+      : t('progressReviewSummary', { rounds: summary.count, reviews: summary.reviews });
+    const rows = summary.recent.map(entry => {
+      const row = document.createElement('li');
+      const activity = document.createElement('strong'); activity.textContent = t(entry.mode);
+      const direction = document.createElement('bdi'); direction.dir = 'ltr'; direction.className = 'progress-meta';
+      direction.textContent = `${entry.front.toUpperCase()} → ${entry.back.toUpperCase()}`;
+      const result = document.createElement('span'); result.className = 'progress-meta';
+      result.textContent = entry.score === null ? t('progressCards', { total: entry.total })
+        : t('progressResult', { score: entry.score, total: entry.total });
+      const date = document.createElement('time'); date.className = 'progress-meta'; date.dateTime = entry.finishedAt;
+      date.textContent = new Date(entry.finishedAt).toLocaleString(uiLanguage, { dateStyle: 'medium', timeStyle: 'short' });
+      row.append(activity, direction, result, date);
+      return row;
+    });
+    byId('progress-history').replaceChildren(...rows);
+  }
+
+  function recordProgress(entry) {
+    try {
+      history = progress.append(history, entry);
+      renderProgress();
+      if (!progress.save(history)) message('progressStorageUnavailable');
+    } catch (_) { message('progressStorageUnavailable'); }
+  }
+
+  function pruneProgress() {
+    const retained = progress.prune(history, collection.lessons.map(lesson => lesson.id));
+    if (retained.length === history.length) return true;
+    history = retained;
+    return progress.save(history);
+  }
+
+  function clearProgress() {
+    if (!currentId || !progress.forLesson(history, currentId).length || !window.confirm(t('confirmClearProgress'))) return;
+    history = progress.clearLesson(history, currentId);
+    renderProgress();
+    message(progress.save(history) ? 'progressCleared' : 'progressStorageUnavailable');
   }
 
   function unavailableReason(mode) {
@@ -705,7 +762,7 @@
       : trueFalse ? trueFalse.map(round => round.item)
       : games.shuffle(items).slice(0, mode === 'wordSearch' ? 5 : mode === 'memory' ? 6 : mode === 'pictureLabels' ? 3
         : ['sentenceOrder', 'sentenceCompletion'].includes(mode) ? 10 : items.length);
-    challenge = { mode, front, back, items: selected, index: 0, score: 0, locked: false,
+    challenge = { lessonId: lesson.id, mode, front, back, items: selected, index: 0, score: 0, locked: false,
       rounds: mode === 'matching' ? games.matchingRounds(items) : [], roundIndex: 0,
       matched: new Set(), selectedFront: null, selectedBack: null, attempts: 0, attemptsThisItem: 0 };
     if (categoryPlan) challenge.categoryGroups = categoryPlan.groups;
@@ -1677,6 +1734,7 @@
 
   function finishChallenge() {
     const state = challenge;
+    const total = state.mode === 'pictureLabels' ? state.labelTotal : state.items.length;
     media.stop();
     byId('challenge-options').replaceChildren();
     byId('challenge-media').replaceChildren();
@@ -1690,10 +1748,12 @@
       ? t('memoryResults', { count: state.items.length, attempts: state.memory.attempts })
       : state.mode === 'matching'
       ? t('matchResults', { attempts: state.attempts })
-      : t('finalScore', { score: state.score, total: state.mode === 'pictureLabels' ? state.labelTotal : state.items.length });
+      : t('finalScore', { score: state.score, total });
     byId('challenge-score').textContent = '';
     effects.animate(byId('challenge-prompt'), 'correct');
     effects.play('complete');
+    recordProgress({ lessonId: state.lessonId, mode: state.mode, front: state.front, back: state.back,
+      score: state.score, total, finishedAt: new Date().toISOString() });
     challenge = null;
   }
 
@@ -1722,6 +1782,7 @@
     byId('lesson-form').addEventListener('submit', save);
     byId('duplicate-lesson').addEventListener('click', duplicate);
     byId('delete-lesson').addEventListener('click', removeLesson);
+    byId('clear-progress').addEventListener('click', clearProgress);
     byId('export-library').addEventListener('click', exportLibrary);
     byId('import-trigger').addEventListener('click', () => byId('import-file').click());
     byId('import-file').addEventListener('change', importLibrary);

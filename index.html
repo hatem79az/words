@@ -12,6 +12,7 @@
     <script src="js/effects.js" defer></script>
     <script src="js/media.js" defer></script>
     <script src="js/storage.js" defer></script>
+    <script src="js/progress.js" defer></script>
     <script src="js/app.js" defer></script>
   </head>
   <body>
@@ -126,6 +127,16 @@
             <p id="challenge-feedback" class="challenge-feedback" role="status" aria-live="polite"></p>
             <button id="challenge-next" class="button button-primary" type="button" data-i18n="next" hidden>Next card</button>
           </div>
+          <section id="lesson-progress" class="lesson-progress" aria-labelledby="progress-title" hidden>
+            <div class="section-heading">
+              <h3 id="progress-title" data-i18n="learnerProgress">Learner progress</h3>
+              <button id="clear-progress" class="button button-quiet danger" type="button" data-i18n="clearProgress" hidden>Clear progress</button>
+            </div>
+            <p id="progress-summary" class="muted" role="status" aria-live="polite"></p>
+            <h4 id="progress-recent-title" data-i18n="recentRounds" hidden>Recent rounds</h4>
+            <ul id="progress-history" class="progress-history"></ul>
+            <p class="storage-note" data-i18n="progressLocalNote">Progress stays in this browser and is not included in lesson exports.</p>
+          </section>
         </div>
       </section>
     </main>
