@@ -9,13 +9,14 @@ Exercise the complete browser app on the intended Windows machine with the netwo
 Acceptance checks:
 
 1. On Windows, create a lesson with four-language text, categories, examples, image markers, pictures, and recordings. Save, close/reopen, export, import on another browser/computer, and confirm all content and media bytes survive without network access.
-2. Play every eligible activity using mouse and keyboard in multiple language directions. Review narrow widths, Arabic RTL, Polish and German marks, focus order, sound mute, and reduced motion. Fix any defects found.
-3. Complete scored rounds and flashcard passes, inspect per-lesson progress, clear it, delete a lesson, and confirm teacher JSON exports contain no progress. Exercise blocked or full browser storage without breaking practice.
-4. Update this file before merging the PR. Keep the browser acceptance item below open until it is exercised on Windows.
+2. Play every eligible activity using mouse and keyboard in multiple language directions. For Letter tiles, drag from tray into the middle, reorder placed letters, and drag one back; repeat for Sentence order in Arabic RTL with wrapped rows and repeated chunks. Confirm a checked/locked answer cannot be dragged and click, Tab, Enter, and Space still work. Review narrow widths, Polish and German marks, focus order, sound mute, and reduced motion. Fix any defects found.
+3. Complete scored rounds and flashcard passes, inspect per-lesson progress in all four interface languages (including Letter tiles, Missing letters, Picture choice, Listen and choose, and Letter guess), clear it, delete a lesson, and confirm teacher JSON exports contain no progress. Exercise blocked or full browser storage without breaking practice.
+4. Check the welcome illustration, tile/drop states, and completion celebration on desktop and narrow layouts. Confirm reduced motion skips the confetti and floating welcome cards, while the final result stays visible. Verify everything works from `file://` with no network.
+5. Update this file before merging the PR. Keep the browser acceptance item below open until it is exercised on Windows.
 
 ## Open browser acceptance gate
 
-On the intended Windows browser, attach pictures and recordings, save, close/reopen, export, import on another browser/computer, and play with the network disconnected. Confirm the JSON contains WebP and audio bytes rather than source paths. Review desktop and narrow widths, keyboard focus, Arabic RTL, and reduced motion visually and fix any defects found. The cloud browser blocked the local `file://` app, so code review and local checks do not close this gate.
+On the intended Windows browser, attach pictures and recordings, save, close/reopen, export, import on another browser/computer, and play with the network disconnected. Confirm the JSON contains WebP and audio bytes rather than source paths. Review desktop and narrow widths, keyboard focus, Arabic RTL drag placement, and reduced motion visually and fix any defects found. The cloud browser blocked the local `file://` app, so code review and local checks do not close this gate.
 
 ## Completed in code
 
@@ -32,7 +33,10 @@ On the intended Windows browser, attach pictures and recordings, save, close/reo
 - Sentence order adds optional 3–12 ordered chunks per language to each lesson word in version 5 JSON. Older exports migrate and duplicates deep-copy examples. The learner uses the front-language sentence to rebuild a target sentence from clickable, keyboard-accessible tiles, including repeated chunks and Arabic RTL; an incorrect attempt offers a retry, then the approved sentence.
 - Sentence completion adds a teacher-selected gap index per language in version 6 JSON; the selected sentence chunk is the approved answer. Older exports migrate, duplicates preserve the choice, invalid indexes and punctuation-only answers are rejected, and duplicate visible questions are excluded. The learner types a missing chunk against a front-language example with one retry, answer reveal, and RTL presentation.
 - Learner progress records completed scored rounds and unscored flashcard passes in a separate local browser store, capped at 500 attempts. Each lesson shows aggregate scored answers and five recent results with activity, direction, and time; a confirmed clear removes its records. Deletion and replacement imports prune orphaned records. Progress stays out of teacher JSON backups, and storage failure leaves practice playable.
+- Recent progress now maps the five activity IDs whose display keys differ from their stored mode values, so all 18 modes show localized names.
+- Letter tiles and Sentence order now support desktop mouse drag from tray to any position, reorder within the answer, and drag back to remove, with a visible drop marker. Click and keyboard flows remain available. The shared insertion logic uses visual row geometry and RTL direction; lesson data and game rules are unchanged.
+- Gameplay controls have spring easing and tactile depth; the welcome screen has a decorative letter illustration, and round completion has a small self-contained confetti effect. Reduced motion suppresses ambient and completion motion. No network assets or file loading APIs were added. See [interaction decisions](docs/INTERACTIVITY_AND_VISUALS_PLAN.md) and [drag details](docs/DRAG_AND_DROP_PLAN.md).
 
 ## After this job
 
-Once the complete browser acceptance and accessibility pass succeeds, start the one-click Windows wrapper and second-laptop test. **Packaging remains phase 2.**
+Once the complete browser acceptance and accessibility pass succeeds, start the one-click Windows wrapper and second-laptop test. **Packaging remains phase 2.** Optional asset enhancements from the supplied visual plan (sample audio, a multilingual heading font, and additional illustrations/icons) should be judged in the offline browser pass before adding their weight or licenses.
