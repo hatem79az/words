@@ -414,6 +414,8 @@
     if (mode === 'listenType') return 'needRecordedAnswers';
     if (mode === 'wordSearch') return !games.hasGraphemeSupport() ? 'needGraphemeSupport'
       : byId('back-language').value === 'ar' ? 'needLatinWordSearch' : 'needWordSearch';
+    if (mode === 'crossword') return !games.hasGraphemeSupport() ? 'needGraphemeSupport'
+      : byId('back-language').value === 'ar' ? 'needLatinCrossword' : 'needCrossword';
     if (mode === 'guess') return games.hasGraphemeSupport() ? 'needGuessWords' : 'needGraphemeSupport';
     if (mode === 'tiles' || mode === 'missing') return games.hasGraphemeSupport() ? 'needSpellingWords' : 'needGraphemeSupport';
     if (mode === 'quiz' || mode === 'matching') return 'needFour';
@@ -431,19 +433,27 @@
       ? games.mediaPairs(lesson, collection.assets, front, back, mode)
       : mode === 'listenType' ? games.listeningTypingPairs(lesson, collection.assets, front, back)
       : mode === 'wordSearch' ? games.wordSearchPairs(lesson, front, back)
+      : mode === 'crossword' ? games.crosswordPairs(lesson, front, back)
       : ['tiles', 'missing', 'guess'].includes(mode) ? games.spellingPairs(lesson, front, back, mode)
       : games.eligiblePairs(lesson, front, back, true);
     if (['quiz', 'matching', 'picture', 'listening'].includes(mode) && items.length < 4) {
       byId('practice-message').textContent = t(mode === 'picture' ? 'needPictures' : mode === 'listening' ? 'needAudio' : 'needFour'); return;
     }
     if (mode === 'wordSearch' && items.length < 3) { byId('practice-message').textContent = t(unavailableReason(mode)); return; }
+    const puzzle = mode === 'crossword' ? games.generateCrossword(items, back) : null;
+    if (mode === 'crossword' && !puzzle) { byId('practice-message').textContent = t(unavailableReason(mode)); return; }
     if (!items.length) { byId('practice-message').textContent = t(unavailableReason(mode)); return; }
-    const selected = games.shuffle(items).slice(0, mode === 'wordSearch' ? 5 : items.length);
+    const selected = mode === 'crossword' ? puzzle.entries.map(entry => items.find(item => item.id === entry.id))
+      : games.shuffle(items).slice(0, mode === 'wordSearch' ? 5 : items.length);
     challenge = { mode, front, back, items: selected, index: 0, score: 0, locked: false,
       rounds: mode === 'matching' ? games.matchingRounds(items) : [], roundIndex: 0,
       matched: new Set(), selectedFront: null, selectedBack: null, attempts: 0, attemptsThisItem: 0 };
     if (mode === 'wordSearch') challenge.search = {
       ...games.generateWordSearch(selected, back), found: new Set(), foundCells: new Set(), start: null, active: { row: 0, col: 0 }
+    };
+    if (mode === 'crossword') challenge.crossword = {
+      puzzle, solved: new Set(), drafts: new Map(), activeEntryId: puzzle.entries[0].id,
+      active: { ...puzzle.entries[0].cells[0] }
     };
     byId('challenge-area').hidden = false;
     renderChallenge();
@@ -479,6 +489,13 @@
       byId('challenge-prompt').removeAttribute('lang'); byId('challenge-prompt').removeAttribute('dir');
       options.classList.add('word-search-options');
       renderWordSearch();
+      return;
+    }
+    if (state.mode === 'crossword') {
+      byId('challenge-prompt').textContent = t('crosswordPrompt');
+      byId('challenge-prompt').removeAttribute('lang'); byId('challenge-prompt').removeAttribute('dir');
+      options.classList.add('crossword-options');
+      renderCrossword();
       return;
     }
     byId('challenge-progress').textContent = t('cardCount', { current: state.index + 1, total: state.items.length });
@@ -746,6 +763,138 @@
     }
   }
 
+  function renderCrossword(focusTarget = 'input') {
+    const state = challenge;
+    if (!state || state.mode !== 'crossword') return;
+    const crossword = state.crossword;
+    const { puzzle, solved } = crossword;
+    const options = byId('challenge-options');
+    const previousScroll = options.querySelector('.crossword-scroll')?.scrollLeft || 0;
+    options.replaceChildren();
+    byId('challenge-progress').textContent = t('crosswordProgress', { count: solved.size, total: puzzle.entries.length });
+    byId('challenge-meter').max = puzzle.entries.length;
+    byId('challenge-meter').value = solved.size;
+    const scroll = document.createElement('div'); scroll.className = 'crossword-scroll';
+    const grid = document.createElement('div'); grid.className = 'crossword-grid';
+    grid.style.setProperty('--crossword-columns', String(puzzle.grid[0].length));
+    grid.setAttribute('role', 'group'); grid.setAttribute('aria-label', t('crosswordGrid'));
+    for (let row = 0; row < puzzle.grid.length; row += 1) for (let col = 0; col < puzzle.grid[row].length; col += 1) {
+      const cell = puzzle.grid[row][col];
+      if (!cell) {
+        const blank = document.createElement('span'); blank.className = 'crossword-blank'; blank.setAttribute('aria-hidden', 'true');
+        grid.append(blank); continue;
+      }
+      const button = document.createElement('button'); button.type = 'button'; button.className = 'crossword-cell';
+      const known = cell.entryIds.some(id => solved.has(id));
+      if (known) button.classList.add('solved');
+      if (cell.entryIds.includes(crossword.activeEntryId) && !state.locked) button.classList.add('active');
+      if (crossword.active.row === row && crossword.active.col === col) button.classList.add('current');
+      if (cell.number) {
+        const number = document.createElement('span'); number.className = 'crossword-number'; number.textContent = String(cell.number);
+        button.append(number);
+      }
+      const letter = document.createElement('span'); letter.className = 'crossword-letter'; letter.textContent = known ? cell.letter : '';
+      letter.lang = state.back; button.append(letter);
+      button.dataset.row = String(row); button.dataset.col = String(col);
+      button.setAttribute('aria-label', `${t('crosswordCell', { row: row + 1, col: col + 1 })}${cell.number ? `, ${t('crosswordStart', { number: cell.number })}` : ''}${known ? `, ${t('crosswordKnown', { letter: cell.letter })}` : ''}`);
+      button.tabIndex = crossword.active.row === row && crossword.active.col === col ? 0 : -1;
+      button.disabled = state.locked;
+      button.addEventListener('click', () => {
+        crossword.active = { row, col };
+        const available = cell.entryIds.filter(id => !solved.has(id));
+        if (!available.length) return;
+        const current = available.indexOf(crossword.activeEntryId);
+        crossword.activeEntryId = available[(current + 1) % available.length];
+        renderCrossword();
+      });
+      button.addEventListener('keydown', event => {
+        const move = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] }[event.key];
+        if (!move) return;
+        event.preventDefault();
+        let nextRow = row + move[0]; let nextCol = col + move[1];
+        while (puzzle.grid[nextRow]?.[nextCol] === null) { nextRow += move[0]; nextCol += move[1]; }
+        const next = grid.querySelector(`[data-row="${nextRow}"][data-col="${nextCol}"]`);
+        if (next) {
+          crossword.active = { row: nextRow, col: nextCol };
+          button.tabIndex = -1; next.tabIndex = 0; next.focus();
+        }
+      });
+      grid.append(button);
+    }
+    scroll.append(grid); options.append(scroll);
+    scroll.scrollLeft = previousScroll;
+    const clueGroups = document.createElement('div'); clueGroups.className = 'crossword-clues';
+    for (const direction of ['across', 'down']) {
+      const group = document.createElement('section');
+      const heading = document.createElement('h3'); heading.textContent = t(direction === 'across' ? 'crosswordAcross' : 'crosswordDown');
+      const list = document.createElement('div'); list.className = 'crossword-clue-list';
+      for (const entry of puzzle.entries.filter(value => value.direction === direction).sort((a, b) => a.number - b.number)) {
+        const item = state.items.find(value => value.id === entry.id);
+        const clue = document.createElement('button'); clue.type = 'button'; clue.className = 'crossword-clue';
+        if (entry.id === crossword.activeEntryId && !state.locked) clue.classList.add('active');
+        if (solved.has(entry.id)) clue.classList.add('solved');
+        clue.disabled = state.locked || solved.has(entry.id);
+        const number = document.createElement('strong'); number.textContent = `${entry.number}. `;
+        const term = document.createElement('span'); setTerm(term, item.terms[state.front], state.front);
+        clue.append(number, term);
+        clue.addEventListener('click', () => {
+          crossword.activeEntryId = entry.id;
+          crossword.active = { ...entry.cells[0] };
+          renderCrossword();
+        });
+        list.append(clue);
+      }
+      group.append(heading, list); clueGroups.append(group);
+    }
+    options.append(clueGroups);
+    if (state.locked) return;
+    const entry = puzzle.entries.find(value => value.id === crossword.activeEntryId);
+    const item = state.items.find(value => value.id === entry.id);
+    const form = document.createElement('form'); form.className = 'crossword-form';
+    const label = document.createElement('label'); label.htmlFor = 'crossword-answer';
+    label.append(`${entry.number} ${t(entry.direction === 'across' ? 'crosswordAcross' : 'crosswordDown')} · `);
+    const clueText = document.createElement('span'); setTerm(clueText, item.terms[state.front], state.front);
+    label.append(clueText);
+    const pattern = document.createElement('p'); pattern.className = 'crossword-pattern';
+    pattern.textContent = entry.cells.map(({ row, col }) =>
+      puzzle.grid[row][col].entryIds.some(id => solved.has(id)) ? puzzle.grid[row][col].letter : '□').join(' ');
+    pattern.setAttribute('aria-label', t('crosswordPattern', { pattern: pattern.textContent }));
+    const controls = document.createElement('div'); controls.className = 'crossword-controls';
+    const input = document.createElement('input'); input.id = 'crossword-answer'; input.type = 'text';
+    input.value = crossword.drafts.get(entry.id) || '';
+    input.autocomplete = 'off'; input.spellcheck = false; input.lang = state.back; input.dir = 'ltr';
+    input.setAttribute('aria-describedby', 'crossword-pattern');
+    pattern.id = 'crossword-pattern';
+    input.addEventListener('input', () => crossword.drafts.set(entry.id, input.value));
+    const check = document.createElement('button'); check.type = 'submit'; check.className = 'button button-primary'; check.textContent = t('check');
+    controls.append(input, check); form.append(label, pattern, controls);
+    form.addEventListener('submit', event => {
+      event.preventDefault();
+      if (!input.value.trim()) { byId('challenge-feedback').textContent = t('enterAnswer'); input.focus(); return; }
+      const correct = games.sameAnswer(input.value, item.terms[state.back], state.back);
+      const output = byId('challenge-feedback');
+      output.className = `challenge-feedback ${correct ? 'positive' : 'negative'}`;
+      output.textContent = t(correct ? 'correct' : 'crosswordRetry');
+      effects.play(correct ? 'correct' : 'wrong'); effects.animate(correct ? grid : input, correct ? 'correct' : 'wrong');
+      if (!correct) { input.focus(); return; }
+      solved.add(entry.id); state.score += 1;
+      crossword.drafts.delete(entry.id);
+      const next = puzzle.entries.find(value => !solved.has(value.id));
+      if (next) { crossword.activeEntryId = next.id; crossword.active = { ...next.cells[0] }; }
+      else state.locked = true;
+      renderCrossword();
+      byId('challenge-score').textContent = t('score', { score: state.score });
+      output.className = 'challenge-feedback positive'; output.textContent = t('correct');
+      if (state.locked) {
+        byId('challenge-next').hidden = false;
+        byId('challenge-next').textContent = t('seeResults');
+        byId('challenge-next').focus();
+      }
+    });
+    options.append(form);
+    if (focusTarget === 'input') input.focus();
+  }
+
   function clearSpellingFeedback() {
     byId('challenge-feedback').textContent = '';
     byId('challenge-feedback').className = 'challenge-feedback';
@@ -880,7 +1029,7 @@
     const state = challenge;
     if (!state) return;
     media.stop();
-    if (state.mode === 'wordSearch') { finishChallenge(); return; }
+    if (state.mode === 'wordSearch' || state.mode === 'crossword') { finishChallenge(); return; }
     if (state.mode === 'matching') {
       if (state.roundIndex === state.rounds.length - 1) { finishChallenge(); return; }
       state.roundIndex += 1;

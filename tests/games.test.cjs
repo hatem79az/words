@@ -148,3 +148,51 @@ test('word search and letter guess skip long or ambiguous terms', () => {
   assert.equal(games.wordSearchPairs(value, 'en', 'de').length, 1);
   assert.equal(games.readiness(value, 'en', 'de').wordSearch, 0);
 });
+
+test('crossword creates connected, numbered paths with matching Polish intersections', () => {
+  const value = lesson(7);
+  ['kot', 'takt', 'taka', 'kawa', 'woda', 'żółw', 'płot'].forEach((word, index) => { value.items[index].terms.pl = word; });
+  const candidates = games.crosswordPairs(value, 'en', 'pl');
+  const puzzle = games.generateCrossword(candidates, 'pl');
+  assert.ok(puzzle && puzzle.entries.length >= 3);
+  assert.equal(games.readiness(value, 'en', 'pl').crossword, puzzle.entries.length);
+  const entryById = new Map(puzzle.entries.map(entry => [entry.id, entry]));
+  const visited = new Set([puzzle.entries[0].id]);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const row of puzzle.grid) for (const cell of row) if (cell && cell.entryIds.some(id => visited.has(id))) {
+      for (const id of cell.entryIds) if (!visited.has(id)) { visited.add(id); changed = true; }
+    }
+  }
+  assert.equal(visited.size, puzzle.entries.length);
+  const starts = new Map();
+  for (const entry of puzzle.entries) {
+    const item = candidates.find(candidate => candidate.id === entry.id);
+    assert.equal(entry.cells.map(({ row, col }) => puzzle.grid[row][col].letter).join(''), games.answerKey(item.terms.pl, 'pl'));
+    assert.ok(entry.cells.every(({ row, col }) => puzzle.grid[row][col].entryIds.includes(entry.id)));
+    const key = `${entry.cells[0].row},${entry.cells[0].col}`;
+    if (starts.has(key)) assert.equal(entry.number, starts.get(key));
+    else starts.set(key, entry.number);
+    assert.equal(puzzle.grid[entry.cells[0].row][entry.cells[0].col].number, entry.number);
+    assert.equal(entryById.get(entry.id), entry);
+  }
+  const numbers = [...new Set(starts.values())].sort((a, b) => a - b);
+  assert.deepEqual(numbers, numbers.map((_, index) => index + 1));
+  assert.ok(puzzle.grid.flat().some(cell => cell?.entryIds.length === 2));
+});
+
+test('crossword respects marked letters and declines disconnected or Arabic answer sets', () => {
+  const value = lesson(5);
+  ['Bär', 'Rätsel', 'Straße', 'Türe', 'Rast'].forEach((word, index) => { value.items[index].terms.de = word; });
+  const puzzle = games.generateCrossword(games.crosswordPairs(value, 'en', 'de'), 'de');
+  assert.ok(puzzle && puzzle.entries.length >= 3);
+  assert.ok(puzzle.entries.some(entry => entry.letters.includes('ä') || entry.letters.includes('ß')));
+  assert.equal(games.sameAnswer('Bar', 'Bär', 'de'), false);
+  assert.equal(games.readiness(value, 'en', 'ar').crossword, 0);
+  assert.deepEqual(games.crosswordPairs(value, 'en', 'ar'), []);
+  const unrelated = lesson(3);
+  ['abc', 'def', 'ghi'].forEach((word, index) => { unrelated.items[index].terms.en = word; });
+  assert.equal(games.generateCrossword(games.crosswordPairs(unrelated, 'pl', 'en'), 'en'), null);
+  assert.equal(games.readiness(unrelated, 'pl', 'en').crossword, 0);
+});

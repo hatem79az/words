@@ -59,7 +59,14 @@
       wordSearchPrompt: 'Find the listed words. Select their first and last letters; use arrow keys to move in the grid.',
       wordsFound: '{count} of {total} words found', foundWord: 'Found: {word}', wordSearchGrid: 'Word search grid',
       gridCell: 'Row {row}, column {col}: {letter}', chooseEndCell: 'Now select the last letter.',
-      tryAnotherPath: 'That path is not a listed word. Try again.'
+      tryAnotherPath: 'That path is not a listed word. Try again.',
+      crossword: 'Crossword', needLatinCrossword: 'Crossword supports English, Polish, and German answer words. Choose another answer language.',
+      needCrossword: 'Add at least three distinct single words of 3–8 letters that share letters in the answer language. This lesson cannot make a connected crossword yet.',
+      crosswordPrompt: 'Choose a numbered clue, type its answer, and check it. Arrow keys move through the grid; Enter selects a cell.',
+      crosswordProgress: '{count} of {total} clues solved', crosswordGrid: 'Crossword grid',
+      crosswordCell: 'Row {row}, column {col}', crosswordStart: 'start {number}', crosswordKnown: 'letter {letter}',
+      crosswordAcross: 'Across', crosswordDown: 'Down', crosswordPattern: 'Known letters: {pattern}',
+      crosswordRetry: 'Not quite. Edit your answer and try again.'
     },
     pl: {
       skip: 'Przejdź do treści', interfaceLanguage: 'Język interfejsu', yourCollection: 'Twoja kolekcja', lessons: 'Lekcje', newLesson: 'Nowa lekcja',
@@ -119,7 +126,14 @@
       wordSearchPrompt: 'Znajdź podane słowa. Wybierz pierwszą i ostatnią literę; strzałkami poruszaj się po siatce.',
       wordsFound: 'Znaleziono {count} z {total} słów', foundWord: 'Znaleziono: {word}', wordSearchGrid: 'Siatka wykreślanki',
       gridCell: 'Wiersz {row}, kolumna {col}: {letter}', chooseEndCell: 'Teraz wybierz ostatnią literę.',
-      tryAnotherPath: 'Ta ścieżka nie tworzy słowa z listy. Spróbuj ponownie.'
+      tryAnotherPath: 'Ta ścieżka nie tworzy słowa z listy. Spróbuj ponownie.',
+      crossword: 'Krzyżówka', needLatinCrossword: 'Krzyżówka obsługuje odpowiedzi angielskie, polskie i niemieckie. Wybierz inny język odpowiedzi.',
+      needCrossword: 'Dodaj co najmniej trzy różne pojedyncze słowa z 3–8 literami, które mają wspólne litery. Z tej lekcji nie da się jeszcze ułożyć połączonej krzyżówki.',
+      crosswordPrompt: 'Wybierz numerowane hasło, wpisz odpowiedź i sprawdź ją. Strzałki poruszają po siatce, Enter wybiera pole.',
+      crosswordProgress: 'Rozwiązano {count} z {total} haseł', crosswordGrid: 'Siatka krzyżówki',
+      crosswordCell: 'Wiersz {row}, kolumna {col}', crosswordStart: 'początek {number}', crosswordKnown: 'litera {letter}',
+      crosswordAcross: 'Poziomo', crosswordDown: 'Pionowo', crosswordPattern: 'Znane litery: {pattern}',
+      crosswordRetry: 'Jeszcze nie. Popraw odpowiedź i spróbuj ponownie.'
     },
     ar: {
       skip: 'انتقل إلى المحتوى', interfaceLanguage: 'لغة الواجهة', yourCollection: 'مجموعتك', lessons: 'الدروس', newLesson: 'درس جديد',
@@ -179,7 +193,14 @@
       wordSearchPrompt: 'ابحث عن الكلمات المعروضة. اختر أول حرف وآخر حرف؛ استخدم الأسهم للتنقل في الشبكة.',
       wordsFound: 'عُثر على {count} من {total} كلمات', foundWord: 'عُثر على: {word}', wordSearchGrid: 'شبكة البحث عن الكلمات',
       gridCell: 'الصف {row}، العمود {col}: {letter}', chooseEndCell: 'اختر الآن الحرف الأخير.',
-      tryAnotherPath: 'هذا المسار لا يشكّل كلمة من القائمة. حاول مرة أخرى.'
+      tryAnotherPath: 'هذا المسار لا يشكّل كلمة من القائمة. حاول مرة أخرى.',
+      crossword: 'الكلمات المتقاطعة', needLatinCrossword: 'تدعم الكلمات المتقاطعة الإجابات الإنجليزية والبولندية والألمانية. اختر لغة إجابة أخرى.',
+      needCrossword: 'أضف ثلاث كلمات مفردة ومختلفة على الأقل من ٣ إلى ٨ أحرف تتشارك حروفًا في لغة الإجابة. لا يمكن تكوين شبكة متصلة من هذا الدرس بعد.',
+      crosswordPrompt: 'اختر تلميحًا مرقّمًا، واكتب الإجابة ثم تحقّق. تنقّل بالأسهم في الشبكة واضغط Enter لاختيار خانة.',
+      crosswordProgress: 'حُلّ {count} من {total} تلميحات', crosswordGrid: 'شبكة الكلمات المتقاطعة',
+      crosswordCell: 'الصف {row}، العمود {col}', crosswordStart: 'البداية {number}', crosswordKnown: 'الحرف {letter}',
+      crosswordAcross: 'أفقي', crosswordDown: 'عمودي', crosswordPattern: 'الحروف المعروفة: {pattern}',
+      crosswordRetry: 'ليست صحيحة بعد. عدّل إجابتك وحاول مرة أخرى.'
     },
     de: {
       skip: 'Zum Inhalt springen', interfaceLanguage: 'Sprache der Oberfläche', yourCollection: 'Deine Sammlung', lessons: 'Lektionen', newLesson: 'Neue Lektion',
@@ -239,7 +260,14 @@
       wordSearchPrompt: 'Finde die genannten Wörter. Wähle Anfangs- und Endbuchstaben; bewege dich mit den Pfeiltasten im Gitter.',
       wordsFound: '{count} von {total} Wörtern gefunden', foundWord: 'Gefunden: {word}', wordSearchGrid: 'Wortsuchgitter',
       gridCell: 'Zeile {row}, Spalte {col}: {letter}', chooseEndCell: 'Wähle jetzt den letzten Buchstaben.',
-      tryAnotherPath: 'Dieser Pfad ergibt kein Wort aus der Liste. Versuche es erneut.'
+      tryAnotherPath: 'Dieser Pfad ergibt kein Wort aus der Liste. Versuche es erneut.',
+      crossword: 'Kreuzworträtsel', needLatinCrossword: 'Das Kreuzworträtsel unterstützt englische, polnische und deutsche Antworten. Wähle eine andere Antwortsprache.',
+      needCrossword: 'Füge mindestens drei verschiedene Einzelwörter mit 3–8 Buchstaben hinzu, die Buchstaben gemeinsam haben. Aus dieser Lektion lässt sich noch kein verbundenes Rätsel bilden.',
+      crosswordPrompt: 'Wähle einen nummerierten Hinweis, tippe die Antwort und prüfe sie. Pfeiltasten bewegen im Gitter, Enter wählt ein Feld.',
+      crosswordProgress: '{count} von {total} Hinweisen gelöst', crosswordGrid: 'Kreuzworträtselgitter',
+      crosswordCell: 'Zeile {row}, Spalte {col}', crosswordStart: 'Anfang {number}', crosswordKnown: 'Buchstabe {letter}',
+      crosswordAcross: 'Waagerecht', crosswordDown: 'Senkrecht', crosswordPattern: 'Bekannte Buchstaben: {pattern}',
+      crosswordRetry: 'Noch nicht richtig. Bearbeite die Antwort und versuche es erneut.'
     }
   };
   root.WordsI18n = { strings, languageNames: { en: 'english', pl: 'polish', ar: 'arabic', de: 'german' } };
