@@ -2,15 +2,15 @@
 
 This file is the handoff point for the next coding session. **Every pull request that changes the app must update this file before it is merged.** Move finished work to the short completed list, place the next unfinished deliverable at the top, and update its acceptance checks. The full scope lives in [docs/BUILD_PLAN.md](docs/BUILD_PLAN.md).
 
-## Next deliverable: learner progress
+## Next deliverable: Windows browser acceptance and quality pass
 
-Record the learner's activity results separately from teacher lesson content. Show useful per-lesson progress and a way to clear it without changing or exporting the lesson source.
+Exercise the complete browser app on the intended Windows machine with the network disconnected. Fix any defects found in lesson authoring, all activities, media transfer, learner progress, responsive layout, and accessibility before beginning Windows packaging.
 
 Acceptance checks:
 
-1. Record a completed round with lesson ID, activity, language direction, score, total, and completion time in a local progress store. Keep progress separate from teacher lesson JSON exports.
-2. Show a concise per-lesson summary and recent attempts; let the learner clear progress with an explicit confirmation. Deleted lessons must not leave confusing visible records.
-3. Respect keyboard, narrow widths, RTL interface text, and storage failure; keep game play available even when progress cannot be saved.
+1. On Windows, create a lesson with four-language text, categories, examples, image markers, pictures, and recordings. Save, close/reopen, export, import on another browser/computer, and confirm all content and media bytes survive without network access.
+2. Play every eligible activity using mouse and keyboard in multiple language directions. Review narrow widths, Arabic RTL, Polish and German marks, focus order, sound mute, and reduced motion. Fix any defects found.
+3. Complete scored rounds and flashcard passes, inspect per-lesson progress, clear it, delete a lesson, and confirm teacher JSON exports contain no progress. Exercise blocked or full browser storage without breaking practice.
 4. Update this file before merging the PR. Keep the browser acceptance item below open until it is exercised on Windows.
 
 ## Open browser acceptance gate
@@ -31,7 +31,8 @@ On the intended Windows browser, attach pictures and recordings, save, close/reo
 - Category sort adds up to 30 localized lesson groups and optional item membership in version 4 JSON. Older exports migrate, duplicates remap category IDs, and invalid/ambiguous names or broken references are rejected. Rounds draw two pairs from each of two to four eligible groups, with keyboard-friendly choices and one retry.
 - Sentence order adds optional 3–12 ordered chunks per language to each lesson word in version 5 JSON. Older exports migrate and duplicates deep-copy examples. The learner uses the front-language sentence to rebuild a target sentence from clickable, keyboard-accessible tiles, including repeated chunks and Arabic RTL; an incorrect attempt offers a retry, then the approved sentence.
 - Sentence completion adds a teacher-selected gap index per language in version 6 JSON; the selected sentence chunk is the approved answer. Older exports migrate, duplicates preserve the choice, invalid indexes and punctuation-only answers are rejected, and duplicate visible questions are excluded. The learner types a missing chunk against a front-language example with one retry, answer reveal, and RTL presentation.
+- Learner progress records completed scored rounds and unscored flashcard passes in a separate local browser store, capped at 500 attempts. Each lesson shows aggregate scored answers and five recent results with activity, direction, and time; a confirmed clear removes its records. Deletion and replacement imports prune orphaned records. Progress stays out of teacher JSON backups, and storage failure leaves practice playable.
 
 ## After this job
 
-Finish the complete browser acceptance and accessibility pass after learner progress. **One-click Windows packaging is phase 2 only.**
+Once the complete browser acceptance and accessibility pass succeeds, start the one-click Windows wrapper and second-laptop test. **Packaging remains phase 2.**

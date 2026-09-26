@@ -177,6 +177,15 @@ h3 { margin-bottom: 0; font-size: 1.08rem; }
 #game-mode { max-width: 100%; }
 #activity-readiness { margin: .85rem 0 0; font-weight: 700; }
 #practice-message { margin: .75rem 0 0; }
+.lesson-progress { margin-top: 2rem; padding-top: 1.2rem; border-top: 1px solid var(--line); }
+.lesson-progress .section-heading { margin-top: 0; }
+.lesson-progress #progress-summary { margin: .85rem 0; }
+.lesson-progress h4 { margin: 1rem 0 .5rem; font-size: .9rem; }
+.progress-history { display: grid; gap: .55rem; margin: 0; padding: 0; list-style: none; }
+.progress-history li { display: flex; align-items: baseline; flex-wrap: wrap; gap: .2rem .8rem; min-width: 0; padding: .65rem .8rem; border: 1px solid var(--line); border-radius: .75rem; background: #f8fafc; }
+.progress-history strong { overflow-wrap: anywhere; }
+.progress-history .progress-meta { color: var(--muted); font-size: .83rem; }
+.lesson-progress .storage-note { margin: 1rem 0 0; }
 .card-progress { margin: 1.35rem 0 .45rem; color: #596982; font-size: .85rem; font-weight: 800; }
 .round-meter { display: block; width: 100%; height: 7px; margin: 0 0 1.3rem; appearance: none; border: 0; border-radius: 99px; overflow: hidden; background: #e9e7f8; }
 .round-meter::-webkit-progress-bar { background: #e9e7f8; border-radius: 99px; }

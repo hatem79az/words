@@ -20,12 +20,15 @@ Download the repository as a ZIP, extract it, and open `index.html` in a current
 - Category sort lets the teacher name groups in the languages they use and assign words in the lesson editor. A round uses two to four groups with two unambiguous word pairs each; group names must exist in the answer language. Choose a group for each prompt with click or keyboard. One retry is allowed before the correct group is shown.
 - Sentence order uses example sentences entered on a lesson word. Open **Example sentences** in that word, and separate three to twelve ordered chunks with `|` in each language you want to pair, keeping punctuation with its word. The front-language example is the clue; select answer-language chunks to assemble it. Repeated chunks remain separate tiles. Remove a placed chunk or clear the whole sentence, then check; one retry is allowed before the approved sentence appears.
 - Sentence completion uses those same examples. In **Example sentences**, choose one existing word or phrase chunk as the gap in a language; its text becomes the approved answer, with terminal sentence punctuation left visible. Add an example in the other selected language as the clue. The learner sees that clue and the answer-language sentence with one blank, types the missing chunk, and gets one retry before the answer is shown. Identical visible questions are excluded.
+- A saved lesson shows learner progress below practice: completed rounds, scored answers, and the five most recent attempts with activity, language direction, result, and time. Completing a flashcard pass records cards viewed without treating them as scored answers. **Clear progress** removes that lesson's local results after confirmation. Deleting a lesson removes its results; a duplicated lesson starts fresh.
 - Attach one picture to a word and optional pronunciation recordings for each language. WebP, PNG, and JPG images are copied into the lesson as resized WebP. Audio may be MP3, WAV, OGG, WebM, or M4A when the browser supports that file. The original files stay in place.
 - Hear short local feedback cues for answers and mute them at any time. Reduced-motion system preferences are respected.
 - Change the interface language. Arabic uses a right-to-left layout; individual term fields retain their correct writing direction.
 - Export all lessons with embedded media to one JSON file and import it on this or another computer. Older version 1–5 exports migrate on import.
 
 Lessons are also saved in the browser's IndexedDB when available, with the earlier localStorage cache as a fallback. **Save the lesson, then export regularly**: storage for pages opened with `file://` can behave differently between browsers and may disappear if browser data is cleared. The app warns if browser storage fails. JSON import/export is the reliable transfer and backup route in this stage. The app never uploads lessons. The media flow still needs hands-on acceptance on the intended Windows browser; see [NEXT_JOB.md](NEXT_JOB.md).
+
+Learner progress is stored separately in this browser's localStorage, with the most recent 500 attempts retained across all lessons. It is **not** in lesson JSON exports or transferred to another computer. If progress storage fails, play continues and the current session's results remain visible until the page closes.
 
 ## Project structure
 
@@ -38,6 +41,7 @@ js/games.js      Shared game eligibility, choices, matching rounds, spelling com
 js/effects.js    Local feedback sound and reduced-motion-aware animation
 js/media.js      Image conversion, audio import, and explicit playback
 js/storage.js    IndexedDB working copy and legacy cache fallback
+js/progress.js   Separate local learner results and summaries
 js/app.js        Browser interactions and local file import/export
 tests/           Data model checks (development only)
 docs/            Two-phase build plan and activity inventory
