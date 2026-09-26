@@ -74,6 +74,44 @@ test('portable image and audio survive export, while missing references are reje
   assert.throws(() => model.validateCollection({ ...saved, assets: { photo: assets.photo } }), /missingMedia/);
 });
 
+test('replacing media near the collection limit prunes old files before checking quota', () => {
+  const value = lesson();
+  value.items = Array.from({ length: 6 }, (_, index) => {
+    const item = model.createItem();
+    item.terms = { en: `word ${index}`, pl: `słowo ${index}` };
+    item.media.audio.en = `voice${index}`;
+    return item;
+  });
+  const recording = { mime: 'audio/mpeg', data: `data:audio/mpeg;base64,${'A'.repeat(5_200_000)}` };
+  const assets = Object.fromEntries(value.items.map((_, index) => [`voice${index}`, recording]));
+  const original = model.saveLesson(model.newCollection(), value, assets);
+  const changed = structuredClone(original.lessons[0]);
+  changed.items[0].media.audio.en = 'replacement';
+  const saved = model.saveLesson(original, changed, { replacement: recording });
+  assert.equal(saved.assets.voice0, undefined);
+  assert.equal(Object.keys(saved.assets).length, 6);
+  assert.equal(saved.assets.replacement.data, recording.data);
+  assert.ok(original.assets.voice0);
+  changed.items[1].media.audio.pl = 'extra';
+  assert.throws(() => model.saveLesson(saved, changed, { extra: recording }), /fileTooLarge/);
+});
+
+test('saved collections stay within the UTF-8 JSON import limit including lesson text', () => {
+  const item = model.createItem();
+  for (const language of model.LANGUAGES) {
+    item.terms[language] = '字'.repeat(500);
+    item.sentences[language] = Array(6).fill('字'.repeat(80));
+  }
+  const large = model.createLesson('Portable text');
+  large.items = Array.from({ length: 500 }, (_, index) => ({ ...item, id: `word-${index}` }));
+  const collection = model.newCollection();
+  collection.lessons = Array.from({ length: 5 }, (_, index) => ({ ...large, id: `lesson-${index}` }));
+  const saved = model.validateCollection(collection);
+  assert.ok(Buffer.byteLength(JSON.stringify(saved)) <= model.MAX_FILE_BYTES);
+  collection.lessons.push({ ...large, id: 'one-too-many' });
+  assert.throws(() => model.validateCollection(collection), /fileTooLarge/);
+});
+
 test('picture markers survive save, export, older import, and duplicate with remapped item IDs', () => {
   const value = lesson();
   const bird = model.createItem(); bird.terms.en = 'bird'; bird.terms.pl = 'ptak';

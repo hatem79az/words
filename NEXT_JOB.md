@@ -14,6 +14,21 @@ Acceptance checks:
 4. Check the welcome and empty-state illustrations, heading font, sound icon, tile/drop states, and completion celebration on desktop and narrow layouts. Confirm bundled MP3 cues play through `file://`, mute silences active and subsequent cues, and the oscillator fallback works if an MP3 cannot play. Confirm reduced motion skips confetti, score count-up, and floating welcome cards while the final result remains visible. Check Polish/German marks and Arabic font fallback with no network.
 5. Update this file before merging the PR. Keep the browser acceptance item below open until it is exercised on Windows.
 
+## Pre-manual audit — 26 September 2026
+
+Reviewed every tracked source, style, HTML, translation, test, script, plan, license, and bundled asset. The confirmed defects from this pass are fixed:
+
+- Duplicating a 120-character lesson title now reserves room for the localized copy suffix; duplication errors, including the collection limit, produce a visible message.
+- Saving rebuilds normalized editor rows, preventing ignored blank rows from keeping media references that were removed from the saved collection. Duplicate, delete, and import update the screen before asynchronous persistence, so a slow save cannot overwrite later navigation or a new draft. Empty imports/deletion detach old rows and reset activity state.
+- Close warnings cover pending attachments and cache writes. IndexedDB reads handle aborts and close connections; blocked opens close a late connection, and successful saves remove obsolete legacy cache data.
+- Media replacements prune unused assets before quota checks. The entire UTF-8 collection is bounded by the same 36 MB limit used for JSON import, including lesson text.
+- Tile insertion groups overlapping row bounds, preserving correct placement when hover or press animation moves one tile. Resetting practice cancels completion animation. Muting stops queued fallback tones so they cannot resume with later feedback.
+- Teacher-authored dollar sequences stay literal in translated answer feedback. Changing the interface language resets unfinished practice with a localized restart message, avoiding a mixed-language active round; completed progress is retained.
+
+Local verification: **47 dependency-free Node tests passed**, plus **70 completed DOM activity rounds across all four interface languages** and the two intended Arabic grid availability gates. The optional `tools/check_ui.cjs` also covers editor races, storage-failure messages, discarded attachments, literal feedback text, and simulated LTR/RTL drags with shifted/wrapped rows, repeated chunks, return-to-tray, and locked answers. All three bundled MP3 files decode; the SVG parses; the WOFF2 parses and contains the Polish/German heading glyphs. These checks run locally, with no GitHub Actions workflow.
+
+The DOM audit uses mocked media/persistence and supplied geometry. Native Chromium binaries crashed at startup in this execution environment, so native rendering, OS drag, actual media import/playback, and offline storage transfer are still part of the Windows manual gate below.
+
 ## Open browser acceptance gate
 
 On the intended Windows browser, attach pictures and recordings, save, close/reopen, export, import on another browser/computer, and play with the network disconnected. Confirm the JSON contains WebP and audio bytes rather than source paths. Review desktop and narrow widths, keyboard focus, Arabic RTL drag placement, local font/audio/image loading, and reduced motion visually and fix any defects found. The cloud browser blocked the local `file://` app, so code review and local checks do not close this gate.

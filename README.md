@@ -4,7 +4,7 @@ An offline vocabulary lesson starter built with plain HTML, CSS, and JavaScript.
 
 ## Run it
 
-Download the repository as a ZIP, extract it, and open `index.html` in a current browser. Keep the `index.html`, `css`, and `js` files together. A development editor such as VS Code is optional.
+Download the repository as a ZIP, extract it, and open `index.html` in a current browser. Keep `index.html` and the `css`, `js`, and `assets` folders together. A development editor such as VS Code is optional.
 
 ## What works now
 
@@ -24,7 +24,7 @@ Download the repository as a ZIP, extract it, and open `index.html` in a current
 - Attach one picture to a word and optional pronunciation recordings for each language. WebP, PNG, and JPG images are copied into the lesson as resized WebP. Audio may be MP3, WAV, OGG, WebM, or M4A when the browser supports that file. The original files stay in place.
 - Hear short bundled feedback cues for answers and mute them at any time. If an audio file cannot play, the existing synthesized tone is used. A completed round has an immediate text result, a brief score count-up and confetti burst; reduced-motion system preferences skip those animations without hiding the result.
 - Local heading typography, a sound icon, and decorative illustrations load with the app and do not require a network connection. Polish and German letters are included in the font; other scripts use the system font.
-- Change the interface language. Arabic uses a right-to-left layout; individual term fields retain their correct writing direction.
+- Change the interface language. Arabic uses a right-to-left layout; individual term fields retain their correct writing direction. Changing the interface language resets an unfinished activity and shows a restart message; saved lessons and completed progress remain available.
 - Export all lessons with embedded media to one JSON file and import it on this or another computer. Older version 1–5 exports migrate on import.
 
 Lessons are also saved in the browser's IndexedDB when available, with the earlier localStorage cache as a fallback. **Save the lesson, then export regularly**: storage for pages opened with `file://` can behave differently between browsers and may disappear if browser data is cleared. The app warns if browser storage fails. JSON import/export is the reliable transfer and backup route in this stage. The app never uploads lessons. The media flow still needs hands-on acceptance on the intended Windows browser; see [NEXT_JOB.md](NEXT_JOB.md).
@@ -72,6 +72,17 @@ The version 6 collection has an `assets` object. Each asset contains a MIME type
 ## Development
 
 There are no runtime dependencies or build step. The local model checks can be run with `node --test tests/*.test.cjs` if Node.js is installed. The optional audio regeneration script requires Python and FFmpeg with MP3 encoding. Open `index.html` in the intended Windows browser to review the interface and media import/export.
+
+For the optional DOM integration audit, install `jsdom@30.1.1` in a separate development directory and run `tools/check_ui.cjs` with that directory's `node_modules` on `NODE_PATH` (Node.js 24 was used for the audit). For example, in a POSIX shell:
+
+```sh
+npm install --prefix ../words-qa --no-save --no-package-lock jsdom@30.1.1
+NODE_PATH=../words-qa/node_modules node tools/check_ui.cjs
+```
+
+The audit completes activities in all four interface languages and checks editor save races, storage-failure messages, and simulated LTR/RTL tile drags. It supplies geometry and mocks audio and persistence; it does not replace native browser layout, drag, media, or accessibility acceptance. All checks run locally; no GitHub Actions workflow is added.
+
+Collection validation limits the complete UTF-8 JSON export to 36 MB, including text and embedded assets, so saved collections remain importable. Unused attachments are removed before replacement media is checked against the collection limits.
 
 ## Next stage
 

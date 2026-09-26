@@ -9,6 +9,7 @@
   const LANGUAGES = Object.freeze(['en', 'pl', 'ar', 'de']);
   const MAX_LESSONS = 500;
   const MAX_ITEMS = 500;
+  const MAX_FILE_BYTES = 36_000_000;
   const MAX_CATEGORIES = 30;
   const ASSET_ID = /^(?!__proto__$|constructor$|prototype$)[a-zA-Z0-9_-]{1,100}$/;
   const AUDIO_TYPES = Object.freeze(['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/webm', 'audio/mp4']);
@@ -156,7 +157,9 @@
       if (item.media.image && (!assets[item.media.image] || assets[item.media.image].mime !== 'image/webp')) throw new Error('missingMedia');
       for (const assetId of Object.values(item.media.audio)) if (!assets[assetId] || !AUDIO_TYPES.includes(assets[assetId].mime)) throw new Error('missingMedia');
     }
-    return { schemaVersion: SCHEMA_VERSION, lessons, assets };
+    const collection = { schemaVersion: SCHEMA_VERSION, lessons, assets };
+    if (new TextEncoder().encode(JSON.stringify(collection)).byteLength > MAX_FILE_BYTES) throw new Error('fileTooLarge');
+    return collection;
   }
 
   function pruneAssets(collection) {
@@ -177,7 +180,7 @@
       if (current.lessons.length >= MAX_LESSONS) throw new Error('tooManyLessons');
       current.lessons.push(checked);
     }
-    return pruneAssets(validateCollection({ ...current, assets: { ...current.assets, ...addedAssets } }));
+    return validateCollection(pruneAssets({ ...current, assets: { ...current.assets, ...addedAssets } }));
   }
 
   function duplicateLesson(lesson) {
@@ -200,7 +203,7 @@
     return validateLesson(lesson).items.filter(item => item.terms[frontLanguage] && item.terms[backLanguage]);
   }
 
-  return { SCHEMA_VERSION, LANGUAGES, AUDIO_TYPES, MAX_HOTSPOTS, HOTSPOT_SPACING, MAX_CATEGORIES,
+  return { SCHEMA_VERSION, LANGUAGES, AUDIO_TYPES, MAX_HOTSPOTS, HOTSPOT_SPACING, MAX_CATEGORIES, MAX_FILE_BYTES,
     newCollection, createLesson, createItem, validateCollection, validateLesson, saveLesson, duplicateLesson,
     pruneAssets, cardsFor, newAssetId: id, newCategoryId: id };
 });

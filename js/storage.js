@@ -7,25 +7,35 @@
     return new Promise((resolve, reject) => {
       if (!root.indexedDB) { reject(new Error('storageUnavailable')); return; }
       const request = root.indexedDB.open('words-library', 1);
+      let abandoned = false;
       request.onupgradeneeded = () => request.result.createObjectStore('documents');
-      request.onsuccess = () => resolve(request.result);
+      request.onsuccess = () => {
+        if (abandoned) { request.result.close(); return; }
+        request.result.onversionchange = () => request.result.close();
+        resolve(request.result);
+      };
       request.onerror = () => reject(request.error);
-      request.onblocked = () => reject(new Error('storageUnavailable'));
+      request.onblocked = () => { abandoned = true; reject(new Error('storageUnavailable')); };
     });
   }
 
   async function load() {
+    let db;
     try {
-      const db = await database();
+      db = await database();
       const value = await new Promise((resolve, reject) => {
         const tx = db.transaction('documents', 'readonly');
         const request = tx.objectStore('documents').get('collection');
-        request.onsuccess = () => resolve(request.result || null);
+        let stored = null;
+        request.onsuccess = () => { stored = request.result || null; };
         request.onerror = () => reject(request.error);
+        tx.oncomplete = () => resolve(stored);
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(tx.error);
       });
-      db.close();
       if (value) return value;
     } catch (_) { /* older browser or file origin: try the earlier cache */ }
+    finally { if (db) db.close(); }
     try {
       const legacy = root.localStorage.getItem(LEGACY_KEY);
       return legacy ? JSON.parse(legacy) : null;
@@ -48,6 +58,8 @@
         tx.onerror = () => reject(tx.error);
         tx.onabort = () => reject(tx.error);
       });
+      // A successful migration must not leave an older library to reappear later.
+      try { root.localStorage.removeItem(LEGACY_KEY); } catch (_) { /* optional legacy cleanup */ }
       return true;
     } catch (_) { return false; }
     finally { db.close(); }
