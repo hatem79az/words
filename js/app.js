@@ -85,7 +85,8 @@
     const row = document.createElement('fieldset');
     row.className = 'item-row';
     row.dataset.id = item.id;
-    row._media = { image: item.media?.image || null, audio: { ...(item.media?.audio || {}) } };
+    row._media = { image: item.media?.image || null, audio: { ...(item.media?.audio || {}) },
+      hotspots: (item.media?.hotspots || []).map(point => ({ ...point })) };
     const grid = document.createElement('div');
     grid.className = 'term-grid';
     for (const language of model.LANGUAGES) {
@@ -102,7 +103,15 @@
     const remove = document.createElement('button');
     remove.type = 'button'; remove.className = 'button button-quiet danger remove-item';
     remove.dataset.i18n = 'remove'; remove.textContent = t('remove');
-    remove.addEventListener('click', () => { row.remove(); dirty = true; });
+    remove.addEventListener('click', () => {
+      row.remove(); dirty = true;
+      for (const other of byId('item-list').children) {
+        const remaining = other._media.hotspots.filter(point => point.itemId !== item.id);
+        if (remaining.length !== other._media.hotspots.length) {
+          other._media.hotspots = remaining; renderHotspotEditor(other);
+        }
+      }
+    });
     const attachments = document.createElement('details');
     attachments.className = 'media-editor';
     const summary = document.createElement('summary'); summary.dataset.i18n = 'mediaAttachments'; summary.textContent = t('mediaAttachments');
@@ -120,13 +129,20 @@
         const asset = await media.importImage(file);
         if (!row.isConnected) return;
         const assetId = model.newAssetId();
-        draftAssets[assetId] = asset; row._media.image = assetId; dirty = true; refreshMediaRow(row);
+        draftAssets[assetId] = asset; row._media.image = assetId; row._media.hotspots = [];
+        dirty = true; refreshMediaRow(row);
         message('imageAdded');
       } catch (error) { message(error.message in i18n.strings.en ? error.message : 'mediaReadFailed'); }
       finally { mediaPending -= 1; }
     });
     const imagePreview = document.createElement('div'); imagePreview.className = 'image-preview'; imagePreview.dataset.imagePreview = '';
-    picture.append(imageLabel, imageInput, imagePreview);
+    const hotspotEditor = document.createElement('details'); hotspotEditor.className = 'hotspot-editor';
+    hotspotEditor.dataset.hotspotEditor = '';
+    const hotspotSummary = document.createElement('summary'); hotspotSummary.dataset.i18n = 'pictureMarkers';
+    hotspotSummary.textContent = t('pictureMarkers');
+    const hotspotContent = document.createElement('div'); hotspotContent.dataset.hotspotContent = '';
+    hotspotEditor.append(hotspotSummary, hotspotContent);
+    picture.append(imageLabel, imageInput, imagePreview, hotspotEditor);
     const audioSlot = document.createElement('div'); audioSlot.className = 'media-slot';
     const audioLabel = document.createElement('label'); audioLabel.dataset.i18n = 'addPronunciation'; audioLabel.textContent = t('addPronunciation');
     const audioSelect = document.createElement('select'); audioSelect.dataset.audioLanguage = '';
@@ -170,7 +186,9 @@
       const thumbnail = document.createElement('img'); thumbnail.src = image.data; thumbnail.alt = t('imagePreview');
       const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'button button-quiet danger';
       remove.textContent = t('removePicture');
-      remove.addEventListener('click', () => { row._media.image = null; dirty = true; refreshMediaRow(row); });
+      remove.addEventListener('click', () => {
+        row._media.image = null; row._media.hotspots = []; dirty = true; refreshMediaRow(row);
+      });
       preview.append(thumbnail, remove);
     } else {
       const empty = document.createElement('span'); empty.className = 'muted'; empty.textContent = t('noPicture'); preview.append(empty);
@@ -192,6 +210,117 @@
     row.querySelector('input[type="file"]').setAttribute('aria-label', t('addPicture'));
     row.querySelectorAll('input[type="file"]')[1].setAttribute('aria-label', t('addPronunciation'));
     select.setAttribute('aria-label', t('audioLanguage'));
+    renderHotspotEditor(row);
+  }
+
+  function fillHotspotOptions(row, select) {
+    const wanted = row._hotspotSelection || select.value;
+    select.replaceChildren();
+    for (const target of byId('item-list').children) {
+      const terms = [...target.querySelectorAll('[data-language]')].map(input => input.value.trim()).filter(Boolean);
+      if (terms.length < 2) continue;
+      const option = document.createElement('option'); option.value = target.dataset.id;
+      option.textContent = terms.slice(0, 2).join(' · ');
+      select.append(option);
+    }
+    if ([...select.options].some(option => option.value === wanted)) select.value = wanted;
+    row._hotspotSelection = select.value;
+  }
+
+  function placeHotspot(row, itemId, x, y) {
+    if (!itemId) { message('hotspotChooseWord'); return false; }
+    if (!Number.isFinite(x) || !Number.isFinite(y) || x < .05 || x > .95 || y < .05 || y > .95) {
+      message('invalidHotspots'); return false;
+    }
+    x = Math.round(x * 1000) / 1000; y = Math.round(y * 1000) / 1000;
+    const remaining = row._media.hotspots.filter(point => point.itemId !== itemId);
+    if (remaining.length >= model.MAX_HOTSPOTS) { message('hotspotLimit'); return false; }
+    if (remaining.some(point => Math.hypot(point.x - x, point.y - y) < model.HOTSPOT_SPACING)) {
+      message('hotspotTooClose'); return false;
+    }
+    row._media.hotspots = [...remaining, { itemId, x, y }];
+    row._hotspotSelection = itemId;
+    dirty = true;
+    renderHotspotEditor(row);
+    message('hotspotPlaced');
+    return true;
+  }
+
+  function sizeHotspotStage(stage, picture, maxHeight) {
+    const size = () => {
+      if (!picture.naturalWidth || !picture.naturalHeight) return;
+      const width = Math.min(picture.naturalWidth, picture.naturalWidth * maxHeight / picture.naturalHeight);
+      stage.style.width = `min(100%, ${Math.round(width)}px)`;
+    };
+    picture.addEventListener('load', size);
+    if (picture.complete) size();
+  }
+
+  function renderHotspotEditor(row) {
+    const editor = row.querySelector('[data-hotspot-editor]');
+    if (!editor) return;
+    const image = assetFor(row._media.image);
+    editor.hidden = !image;
+    editor.querySelector('summary').textContent = t('pictureMarkers');
+    const content = editor.querySelector('[data-hotspot-content]');
+    content.replaceChildren();
+    if (!image) return;
+    const guide = document.createElement('p'); guide.className = 'muted'; guide.textContent = t('hotspotGuide');
+    const targetLabel = document.createElement('label'); targetLabel.textContent = t('hotspotTarget');
+    const select = document.createElement('select');
+    select.addEventListener('focus', () => fillHotspotOptions(row, select));
+    select.addEventListener('change', () => {
+      row._hotspotSelection = select.value;
+      const existing = row._media.hotspots.find(point => point.itemId === select.value);
+      if (existing) { xInput.value = String(Math.round(existing.x * 100)); yInput.value = String(Math.round(existing.y * 100)); }
+    });
+    targetLabel.append(select);
+    fillHotspotOptions(row, select);
+    const controls = document.createElement('div'); controls.className = 'hotspot-controls';
+    const xLabel = document.createElement('label'); xLabel.textContent = t('hotspotX');
+    const xInput = document.createElement('input'); xInput.type = 'number'; xInput.min = '5'; xInput.max = '95'; xInput.step = '1'; xInput.value = '50';
+    xLabel.append(xInput);
+    const yLabel = document.createElement('label'); yLabel.textContent = t('hotspotY');
+    const yInput = document.createElement('input'); yInput.type = 'number'; yInput.min = '5'; yInput.max = '95'; yInput.step = '1'; yInput.value = '50';
+    yLabel.append(yInput);
+    const existing = row._media.hotspots.find(point => point.itemId === select.value);
+    if (existing) { xInput.value = String(Math.round(existing.x * 100)); yInput.value = String(Math.round(existing.y * 100)); }
+    const place = document.createElement('button'); place.type = 'button'; place.className = 'button button-secondary'; place.textContent = t('placeMarker');
+    place.addEventListener('click', () => {
+      if (placeHotspot(row, select.value, Number(xInput.value) / 100, Number(yInput.value) / 100))
+        editor.querySelector('select')?.focus();
+    });
+    controls.append(xLabel, yLabel, place);
+    const stage = document.createElement('div'); stage.className = 'hotspot-stage editor-stage';
+    const picture = document.createElement('img'); picture.src = image.data; picture.alt = t('imagePreview');
+    picture.addEventListener('click', event => {
+      const bounds = picture.getBoundingClientRect();
+      const x = Math.max(.05, Math.min(.95, (event.clientX - bounds.left) / bounds.width));
+      const y = Math.max(.05, Math.min(.95, (event.clientY - bounds.top) / bounds.height));
+      placeHotspot(row, select.value, x, y);
+    });
+    stage.append(picture);
+    sizeHotspotStage(stage, picture, 420);
+    row._media.hotspots.forEach((point, index) => {
+      const marker = document.createElement('span'); marker.className = 'hotspot-marker editor-marker';
+      marker.textContent = String(index + 1); marker.style.left = `${point.x * 100}%`; marker.style.top = `${point.y * 100}%`;
+      marker.setAttribute('aria-hidden', 'true'); stage.append(marker);
+    });
+    const list = document.createElement('div'); list.className = 'hotspot-list';
+    for (const [index, point] of row._media.hotspots.entries()) {
+      const line = document.createElement('div'); line.className = 'hotspot-line';
+      const target = [...byId('item-list').children].find(candidate => candidate.dataset.id === point.itemId);
+      const terms = target ? [...target.querySelectorAll('[data-language]')].map(input => input.value.trim()).filter(Boolean) : [];
+      const label = document.createElement('span'); label.textContent = `${index + 1}. ${terms[0] || t('missingLabel')} (${Math.round(point.x * 100)}%, ${Math.round(point.y * 100)}%)`;
+      const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'button button-quiet danger';
+      remove.textContent = t('remove'); remove.setAttribute('aria-label', `${t('remove')} · ${label.textContent}`);
+      remove.addEventListener('click', () => {
+        row._media.hotspots = row._media.hotspots.filter(value => value !== point);
+        dirty = true; renderHotspotEditor(row);
+      });
+      line.append(label, remove); list.append(line);
+    }
+    content.append(guide, targetLabel, controls, stage, list);
   }
 
   function openLesson(id) {
@@ -209,6 +338,7 @@
     byId('lesson-name').value = draft.title;
     byId('editor-title').textContent = draft.title;
     byId('item-list').replaceChildren(...draft.items.map(makeItemRow));
+    for (const row of byId('item-list').children) renderHotspotEditor(row);
     resetDeck(); renderList(); renderReadiness();
   }
 
@@ -235,7 +365,8 @@
     const items = [...byId('item-list').children].map(row => {
       const terms = {};
       for (const input of row.querySelectorAll('[data-language]')) terms[input.dataset.language] = input.value;
-      return { id: row.dataset.id, terms, media: { image: row._media.image, audio: { ...row._media.audio } } };
+      return { id: row.dataset.id, terms, media: { image: row._media.image, audio: { ...row._media.audio },
+        hotspots: row._media.hotspots.map(point => ({ ...point })) } };
     }).filter(item => Object.values(item.terms).some(term => term.trim()));
     return { ...draft, title: byId('lesson-name').value, updatedAt: now, items };
   }
@@ -405,12 +536,13 @@
     const counts = games.readiness(saved, front, back, collection.assets);
     const mode = byId('game-mode').value;
     byId('activity-readiness').textContent = counts[mode]
-      ? t('readyItems', { count: counts[mode] })
+      ? t(mode === 'pictureLabels' ? 'readyLabelPictures' : 'readyItems', { count: counts[mode] })
       : t(unavailableReason(mode));
   }
 
   function unavailableReason(mode) {
     if (mode === 'picture') return 'needPictures';
+    if (mode === 'pictureLabels') return 'needPictureLabels';
     if (mode === 'listening') return 'needAudio';
     if (mode === 'listenType') return 'needRecordedAnswers';
     if (mode === 'wordSearch') return !games.hasGraphemeSupport() ? 'needGraphemeSupport'
@@ -432,6 +564,7 @@
   function startChallenge(lesson, mode, front, back) {
     const items = mode === 'picture' || mode === 'listening'
       ? games.mediaPairs(lesson, collection.assets, front, back, mode)
+      : mode === 'pictureLabels' ? games.pictureLabelScenes(lesson, collection.assets, front, back)
       : mode === 'listenType' ? games.listeningTypingPairs(lesson, collection.assets, front, back)
       : mode === 'wordSearch' ? games.wordSearchPairs(lesson, front, back)
       : mode === 'crossword' ? games.crosswordPairs(lesson, front, back)
@@ -447,7 +580,7 @@
     const trueFalse = mode === 'trueFalse' ? games.trueFalseRounds(items, back) : null;
     const selected = mode === 'crossword' ? puzzle.entries.map(entry => items.find(item => item.id === entry.id))
       : trueFalse ? trueFalse.map(round => round.item)
-      : games.shuffle(items).slice(0, mode === 'wordSearch' ? 5 : mode === 'memory' ? 6 : items.length);
+      : games.shuffle(items).slice(0, mode === 'wordSearch' ? 5 : mode === 'memory' ? 6 : mode === 'pictureLabels' ? 3 : items.length);
     challenge = { mode, front, back, items: selected, index: 0, score: 0, locked: false,
       rounds: mode === 'matching' ? games.matchingRounds(items) : [], roundIndex: 0,
       matched: new Set(), selectedFront: null, selectedBack: null, attempts: 0, attemptsThisItem: 0 };
@@ -460,6 +593,7 @@
     };
     if (mode === 'memory') challenge.memory = games.createMemoryRound(selected, front, back);
     if (trueFalse) challenge.trueFalse = trueFalse;
+    if (mode === 'pictureLabels') challenge.labelTotal = selected.reduce((total, scene) => total + scene.hotspots.length, 0);
     byId('challenge-area').hidden = false;
     renderChallenge();
   }
@@ -494,6 +628,15 @@
       byId('challenge-prompt').removeAttribute('lang'); byId('challenge-prompt').removeAttribute('dir');
       options.classList.add('memory-board');
       renderMemory();
+      return;
+    }
+    if (state.mode === 'pictureLabels') {
+      state.labelSolved = new Set(); state.selectedLabelId = null;
+      state.labelOrder = games.shuffle(state.items[state.index].hotspots);
+      byId('challenge-prompt').textContent = t('pictureLabelsPrompt');
+      byId('challenge-prompt').removeAttribute('lang'); byId('challenge-prompt').removeAttribute('dir');
+      options.classList.add('picture-label-options');
+      renderPictureLabels();
       return;
     }
     if (state.mode === 'wordSearch') {
@@ -1002,6 +1145,71 @@
     prepareNext();
   }
 
+  function renderPictureLabels(focus = 'label') {
+    const state = challenge;
+    if (!state || state.mode !== 'pictureLabels') return;
+    const scene = state.items[state.index];
+    const options = byId('challenge-options'); options.replaceChildren();
+    byId('challenge-progress').textContent = t('labelsPlaced', { count: state.score, total: state.labelTotal });
+    byId('challenge-meter').max = state.labelTotal; byId('challenge-meter').value = state.score;
+    byId('challenge-score').textContent = t('score', { score: state.score });
+    const stage = document.createElement('div'); stage.className = 'hotspot-stage play-stage';
+    const picture = document.createElement('img'); picture.src = assetFor(scene.item.media.image).data; picture.alt = t('pictureToLabel');
+    stage.append(picture);
+    sizeHotspotStage(stage, picture, 440);
+    scene.hotspots.forEach((point, index) => {
+      const marker = document.createElement('button'); marker.type = 'button'; marker.className = 'hotspot-marker label-marker';
+      marker.textContent = String(index + 1); marker.style.left = `${point.x * 100}%`; marker.style.top = `${point.y * 100}%`;
+      marker.disabled = state.labelSolved.has(point.itemId);
+      if (marker.disabled) marker.classList.add('placed');
+      marker.setAttribute('aria-label', marker.disabled
+        ? t('placedMarker', { number: index + 1, word: point.item.terms[state.back] })
+        : t('emptyMarker', { number: index + 1 }));
+      marker.addEventListener('click', () => choosePictureMarker(point, marker));
+      stage.append(marker);
+    });
+    const choices = document.createElement('div'); choices.className = 'picture-label-choices';
+    for (const point of state.labelOrder) {
+      const button = document.createElement('button'); button.type = 'button'; button.className = 'game-option';
+      setTerm(button, point.item.terms[state.back], state.back);
+      button.dataset.labelId = point.itemId;
+      button.disabled = state.labelSolved.has(point.itemId);
+      if (button.disabled) button.classList.add('correct');
+      if (state.selectedLabelId === point.itemId) button.classList.add('selected');
+      button.addEventListener('click', () => {
+        state.selectedLabelId = point.itemId;
+        renderPictureLabels('marker');
+        byId('challenge-feedback').textContent = t('choosePictureMarker');
+        byId('challenge-feedback').className = 'challenge-feedback';
+      });
+      choices.append(button);
+    }
+    options.append(stage, choices);
+    if (!state.locked) {
+      const target = focus === 'marker' ? stage.querySelector('button:not(:disabled)')
+        : choices.querySelector('button:not(:disabled)');
+      target?.focus();
+    }
+  }
+
+  function choosePictureMarker(point, marker) {
+    const state = challenge;
+    if (!state || state.mode !== 'pictureLabels' || state.locked || state.labelSolved.has(point.itemId)) return;
+    const output = byId('challenge-feedback');
+    if (!state.selectedLabelId) { output.textContent = t('selectPictureLabel'); return; }
+    const correct = state.selectedLabelId === point.itemId;
+    if (correct) {
+      state.labelSolved.add(point.itemId); state.selectedLabelId = null; state.score += 1;
+      if (state.labelSolved.size === state.items[state.index].hotspots.length) state.locked = true;
+      renderPictureLabels();
+    }
+    output.className = `challenge-feedback ${correct ? 'positive' : 'negative'}`;
+    output.textContent = correct ? t('labelPlaced', { word: point.item.terms[state.back] }) : t('tryAnotherMarker');
+    effects.animate(correct ? byId('challenge-options').querySelector('.play-stage') : marker, correct ? 'correct' : 'wrong');
+    effects.play(correct ? 'correct' : 'wrong');
+    if (state.locked) prepareNext();
+  }
+
   function answerTyping(event) {
     event.preventDefault();
     const state = challenge;
@@ -1191,7 +1399,7 @@
       ? t('memoryResults', { count: state.items.length, attempts: state.memory.attempts })
       : state.mode === 'matching'
       ? t('matchResults', { attempts: state.attempts })
-      : t('finalScore', { score: state.score, total: state.items.length });
+      : t('finalScore', { score: state.score, total: state.mode === 'pictureLabels' ? state.labelTotal : state.items.length });
     byId('challenge-score').textContent = '';
     effects.animate(byId('challenge-prompt'), 'correct');
     effects.play('complete');

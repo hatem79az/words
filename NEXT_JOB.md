@@ -2,15 +2,15 @@
 
 This file is the handoff point for the next coding session. **Every pull request that changes the app must update this file before it is merged.** Move finished work to the short completed list, place the next unfinished deliverable at the top, and update its acceptance checks. The full scope lives in [docs/BUILD_PLAN.md](docs/BUILD_PLAN.md).
 
-## Next deliverable: picture labels
+## Next deliverable: category sort
 
-Let the teacher mark parts of an attached picture and link each marker to an item in the same lesson. The learner chooses a term and places it on the matching marker. Use the existing portable image assets, with all marker data in the saved lesson and JSON export.
+Let the teacher assign vocabulary items to named categories within a lesson, then let the learner sort terms into those groups. Category names and memberships must survive save, duplicate, export, and import.
 
 Acceptance checks:
 
-1. A teacher can place, move, and remove at least two distinct word markers on an image. Replacing or removing the picture clears its markers; invalid positions or broken item references are rejected.
-2. Markers survive save, duplicate, export, and import while older JSON files still open. The game explains when no eligible labelled picture exists.
-3. The learner can select a label and marker with click or keyboard, gets useful feedback, and sees accurate progress. The picture stays readable at narrow widths and with RTL terms.
+1. The teacher can create at least two distinct named groups and assign items to them without copying lesson words into a separate game list.
+2. Groups and membership survive save, duplicate, export, and import. Older JSON files still open, and ambiguous or incomplete categories are rejected or explained.
+3. The learner sorts with click or keyboard, receives clear feedback, and sees accurate progress in each selected language direction, including RTL.
 4. Update this file before merging the PR. Keep the browser acceptance item below open until it is exercised on Windows.
 
 ## Open browser acceptance gate
@@ -27,7 +27,8 @@ On the intended Windows browser, attach pictures and recordings, save, close/reo
 - Crossword generates a connected grid of 3–5 short unique answer words with actual crossings and numbered across/down clues. It preserves Polish and German letters, supports keyboard selection and editable answer drafts, and explains the Arabic answer-language and insufficient-grid gates.
 - Memory cards uses four to six unique saved pairs, shuffles both sides face down, and keeps matched cards visible. A mismatch pauses the board and then covers both cards; attempts and matches are tracked separately. The board supports keyboard activation, narrow widths, RTL terms, and reduced motion.
 - True or false uses an even number of unique lesson prompts (up to ten), half correct and half deliberately incorrect, with a distinct answer from another pair for each false proposal. It reports the actual matching answer after an error and supports all four language directions.
+- Picture labels adds up to eight teacher-positioned markers to an attached scene image, with normalized coordinates and references to lesson items. Version 3 JSON preserves them and migrates older exports; duplicates remap item IDs. A learner chooses terms and numbered markers with mouse or keyboard, and the activity explains when a picture lacks enough eligible labels.
 
 ## After this job
 
-Finish category sort, sentence order, and sentence completion; then learner progress and the complete browser acceptance pass. **One-click Windows packaging is phase 2 only.**
+Finish sentence order and sentence completion; then learner progress and the complete browser acceptance pass. **One-click Windows packaging is phase 2 only.**

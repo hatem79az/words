@@ -55,6 +55,18 @@
     return pairs.filter(item => clues.get(clueFor(item)) === 1);
   }
 
+  function pictureLabelScenes(lesson, assets, front, back) {
+    const available = new Map(eligiblePairs(lesson, front, back, true).map(item => [item.id, item]));
+    return lesson.items.flatMap(item => {
+      if (!item.media?.image || !assets[item.media.image]?.data) return [];
+      const hotspots = (item.media.hotspots || []).flatMap(point => {
+        const target = available.get(point.itemId);
+        return target ? [{ ...point, item: target }] : [];
+      });
+      return hotspots.length >= 2 ? [{ item, hotspots }] : [];
+    });
+  }
+
   function hasGraphemeSupport() {
     return typeof Intl !== 'undefined' && typeof Intl.Segmenter === 'function';
   }
@@ -341,6 +353,7 @@
     const cards = eligiblePairs(lesson, front, back, false);
     const distinct = eligiblePairs(lesson, front, back, true);
     const pictures = mediaPairs(lesson, assets, front, back, 'picture').length;
+    const pictureLabels = pictureLabelScenes(lesson, assets, front, back).length;
     const listening = mediaPairs(lesson, assets, front, back, 'listening').length;
     const tiles = spellingPairs(lesson, front, back, 'tiles').length;
     const missing = spellingPairs(lesson, front, back, 'missing').length;
@@ -362,11 +375,12 @@
       wordSearch: wordSearchItems >= 3 ? wordSearchItems : 0,
       crossword: crossword ? crossword.entries.length : 0,
       picture: pictures >= 4 ? pictures : 0,
+      pictureLabels,
       listening: listening >= 4 ? listening : 0
     };
   }
 
-  return { answerKey, sameAnswer, eligiblePairs, mediaPairs, hasGraphemeSupport, spellingClusters,
+  return { answerKey, sameAnswer, eligiblePairs, mediaPairs, pictureLabelScenes, hasGraphemeSupport, spellingClusters,
     spellingPairs, listeningTypingPairs, tileOrder, missingPlan, guessOptions, wordSearchPairs,
     generateWordSearch, crosswordPairs, generateCrossword, gridPath, shuffle, quizChoices, matchingRounds,
     createMemoryRound, memoryTurn, memoryCover, trueFalseRounds, readiness };
