@@ -2,15 +2,15 @@
 
 This file is the handoff point for the next coding session. **Every pull request that changes the app must update this file before it is merged.** Move finished work to the short completed list, place the next unfinished deliverable at the top, and update its acceptance checks. The full scope lives in [docs/BUILD_PLAN.md](docs/BUILD_PLAN.md).
 
-## Next deliverable: category sort
+## Next deliverable: sentence order
 
-Let the teacher assign vocabulary items to named categories within a lesson, then let the learner sort terms into those groups. Category names and memberships must survive save, duplicate, export, and import.
+Let the teacher enter short contextual sentences as approved, ordered word chunks in lesson items. Let learners reconstruct the answer-language example using the shared lesson, with a front-language example as the clue.
 
 Acceptance checks:
 
-1. The teacher can create at least two distinct named groups and assign items to them without copying lesson words into a separate game list.
-2. Groups and membership survive save, duplicate, export, and import. Older JSON files still open, and ambiguous or incomplete categories are rejected or explained.
-3. The learner sorts with click or keyboard, receives clear feedback, and sees accurate progress in each selected language direction, including RTL.
+1. The teacher can enter and edit short, ordered chunks in each language on a vocabulary item; the target language has at least three usable chunks, and the front language provides a sentence clue.
+2. Sentences survive save, duplicate, export, and import. Versions 1–4 migrate, while incomplete or malformed chunks are rejected or explained.
+3. The learner assembles the target sentence with click or keyboard, including repeated words, punctuation, Polish/German marks, and Arabic RTL, with undo, retry, answer, and accurate progress.
 4. Update this file before merging the PR. Keep the browser acceptance item below open until it is exercised on Windows.
 
 ## Open browser acceptance gate
@@ -28,7 +28,8 @@ On the intended Windows browser, attach pictures and recordings, save, close/reo
 - Memory cards uses four to six unique saved pairs, shuffles both sides face down, and keeps matched cards visible. A mismatch pauses the board and then covers both cards; attempts and matches are tracked separately. The board supports keyboard activation, narrow widths, RTL terms, and reduced motion.
 - True or false uses an even number of unique lesson prompts (up to ten), half correct and half deliberately incorrect, with a distinct answer from another pair for each false proposal. It reports the actual matching answer after an error and supports all four language directions.
 - Picture labels adds up to eight teacher-positioned markers to an attached scene image, with normalized coordinates and references to lesson items. Version 3 JSON preserves them and migrates older exports; duplicates remap item IDs. A learner chooses terms and numbered markers with mouse or keyboard, and the activity explains when a picture lacks enough eligible labels.
+- Category sort adds up to 30 localized lesson groups and optional item membership in version 4 JSON. Older exports migrate, duplicates remap category IDs, and invalid/ambiguous names or broken references are rejected. Rounds draw two pairs from each of two to four eligible groups, with keyboard-friendly choices and one retry.
 
 ## After this job
 
-Finish sentence order and sentence completion; then learner progress and the complete browser acceptance pass. **One-click Windows packaging is phase 2 only.**
+Finish sentence completion; then learner progress and the complete browser acceptance pass. **One-click Windows packaging is phase 2 only.**

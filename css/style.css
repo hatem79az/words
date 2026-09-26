@@ -118,6 +118,11 @@ h3 { margin-bottom: 0; font-size: 1.08rem; }
 .term-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .85rem; }
 .term-grid label { display: grid; gap: .35rem; font-size: .84rem; font-weight: 750; }
 .term-grid input { width: 100%; min-width: 0; }
+.category-list { display: grid; gap: .7rem; margin: .8rem 0 1.2rem; }
+.category-row { min-width: 0; padding: 1rem; border: 1px solid var(--line); border-radius: .9rem; background: #f8fafc; }
+.category-row .button { margin-top: .5rem; }
+.item-category-label { display: grid; gap: .35rem; max-width: 24rem; margin-top: .9rem; font-size: .84rem; font-weight: 750; }
+.item-category-label select { width: 100%; }
 .media-hint { padding: .75rem 1rem; margin: .8rem 0 0; color: #3b6370; background: #eef8f5; border: 1px solid #d9eee8; border-radius: .85rem; font-size: .87rem; }
 .media-editor { margin-top: 1rem; background: #f8fafc; border: 1px solid #dae3ed; border-radius: .9rem; }
 .media-editor summary { padding: .85rem 1rem; color: var(--teal); font-weight: 800; cursor: pointer; border-radius: .85rem; }
@@ -188,6 +193,10 @@ h3 { margin-bottom: 0; font-size: 1.08rem; }
 }
 .challenge-media { display: flex; justify-content: center; margin: -.2rem 0 1.2rem; }
 .challenge-media:empty { display: none; }
+.category-play-hint { margin: 0; color: var(--muted); font-weight: 700; text-align: center; }
+.category-sort-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+.category-sort-options .game-option { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 520px) { .category-sort-options { grid-template-columns: 1fr; } }
 .question-picture { width: min(310px, 100%); height: min(310px, 55vw); min-height: 180px; object-fit: contain; padding: .8rem; background: #f9fbfd; border: 1px solid #e0e7f0; border-radius: 1.1rem; box-shadow: 0 12px 26px rgba(32, 43, 69, .07); }
 .listen-button {
   min-height: 105px; min-width: min(280px, 100%); padding: 1rem 1.5rem;

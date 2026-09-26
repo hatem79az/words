@@ -349,6 +349,19 @@
     });
   }
 
+  function categorySortPlan(lesson, front, back, random = Math.random) {
+    const pairs = eligiblePairs(lesson, front, back, true);
+    const available = (lesson.categories || []).map(category => ({
+      id: category.id, name: category.names[back],
+      items: pairs.filter(item => item.categoryId === category.id)
+    })).filter(group => group.name && group.items.length >= 2);
+    if (available.length < 2) return null;
+    const groups = shuffle(available, random).slice(0, 4).map(group => ({
+      ...group, items: shuffle(group.items, random).slice(0, 2)
+    }));
+    return { groups, items: shuffle(groups.flatMap(group => group.items), random) };
+  }
+
   function readiness(lesson, front, back, assets = {}) {
     const cards = eligiblePairs(lesson, front, back, false);
     const distinct = eligiblePairs(lesson, front, back, true);
@@ -376,11 +389,12 @@
       crossword: crossword ? crossword.entries.length : 0,
       picture: pictures >= 4 ? pictures : 0,
       pictureLabels,
+      categorySort: categorySortPlan(lesson, front, back)?.items.length || 0,
       listening: listening >= 4 ? listening : 0
     };
   }
 
-  return { answerKey, sameAnswer, eligiblePairs, mediaPairs, pictureLabelScenes, hasGraphemeSupport, spellingClusters,
+  return { answerKey, sameAnswer, eligiblePairs, mediaPairs, pictureLabelScenes, categorySortPlan, hasGraphemeSupport, spellingClusters,
     spellingPairs, listeningTypingPairs, tileOrder, missingPlan, guessOptions, wordSearchPairs,
     generateWordSearch, crosswordPairs, generateCrossword, gridPath, shuffle, quizChoices, matchingRounds,
     createMemoryRound, memoryTurn, memoryCover, trueFalseRounds, readiness };

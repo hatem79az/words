@@ -39,6 +39,7 @@
     if (draft) byId('editor-title').textContent = draft.title || t('newLesson');
     updateSoundButton();
     for (const row of byId('item-list').children) refreshMediaRow(row);
+    refreshCategorySelects();
     renderReadiness();
     renderList();
   }
@@ -81,6 +82,44 @@
     }
   }
 
+  function makeCategoryRow(category) {
+    const row = document.createElement('div'); row.className = 'category-row'; row.dataset.id = category.id;
+    const grid = document.createElement('div'); grid.className = 'term-grid';
+    for (const language of model.LANGUAGES) {
+      const label = document.createElement('label');
+      const span = document.createElement('span'); span.dataset.i18n = i18n.languageNames[language]; span.textContent = t(span.dataset.i18n);
+      const input = document.createElement('input'); input.type = 'text'; input.maxLength = 80;
+      input.value = category.names[language] || ''; input.dataset.categoryLanguage = language;
+      input.lang = language; input.dir = language === 'ar' ? 'rtl' : 'ltr';
+      input.addEventListener('input', refreshCategorySelects);
+      label.append(span, input); grid.append(label);
+    }
+    const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'button button-quiet danger';
+    remove.dataset.i18n = 'remove'; remove.textContent = t('remove');
+    remove.addEventListener('click', () => { row.remove(); dirty = true; refreshCategorySelects(); });
+    row.append(grid, remove);
+    return row;
+  }
+
+  function refreshCategorySelects() {
+    const categories = [...byId('category-list').children].map(row => ({
+      id: row.dataset.id,
+      names: Object.fromEntries([...row.querySelectorAll('[data-category-language]')]
+        .map(input => [input.dataset.categoryLanguage, input.value.trim()]))
+    }));
+    for (const select of byId('item-list').querySelectorAll('[data-category-select]')) {
+      const chosen = select.value || select.dataset.initialCategory || '';
+      select.replaceChildren();
+      const none = document.createElement('option'); none.value = ''; none.textContent = t('noCategory'); select.append(none);
+      for (const category of categories) {
+        const option = document.createElement('option'); option.value = category.id;
+        option.textContent = category.names[uiLanguage] || Object.values(category.names).find(Boolean) || t('unnamedCategory'); select.append(option);
+      }
+      select.value = [...select.options].some(option => option.value === chosen) ? chosen : '';
+      delete select.dataset.initialCategory;
+    }
+  }
+
   function makeItemRow(item) {
     const row = document.createElement('fieldset');
     row.className = 'item-row';
@@ -100,6 +139,13 @@
       input.autocomplete = 'off';
       label.append(span, input); grid.append(label);
     }
+    const categoryLabel = document.createElement('label'); categoryLabel.className = 'item-category-label';
+    const categoryText = document.createElement('span'); categoryText.dataset.i18n = 'categoryForWord';
+    categoryText.textContent = t('categoryForWord');
+    const categorySelect = document.createElement('select'); categorySelect.dataset.categorySelect = '';
+    categorySelect.dataset.initialCategory = item.categoryId || '';
+    categorySelect.addEventListener('change', () => { dirty = true; });
+    categoryLabel.append(categoryText, categorySelect);
     const remove = document.createElement('button');
     remove.type = 'button'; remove.className = 'button button-quiet danger remove-item';
     remove.dataset.i18n = 'remove'; remove.textContent = t('remove');
@@ -170,7 +216,7 @@
     const audioList = document.createElement('div'); audioList.className = 'audio-list'; audioList.dataset.audioList = '';
     audioSlot.append(audioLabel, audioSelect, audioInput, audioList);
     content.append(picture, audioSlot); attachments.append(summary, content);
-    row.append(grid, attachments, remove);
+    row.append(grid, categoryLabel, attachments, remove);
     refreshMediaRow(row);
     return row;
   }
@@ -337,7 +383,9 @@
     byId('delete-lesson').hidden = false;
     byId('lesson-name').value = draft.title;
     byId('editor-title').textContent = draft.title;
+    byId('category-list').replaceChildren(...draft.categories.map(makeCategoryRow));
     byId('item-list').replaceChildren(...draft.items.map(makeItemRow));
+    refreshCategorySelects();
     for (const row of byId('item-list').children) renderHotspotEditor(row);
     resetDeck(); renderList(); renderReadiness();
   }
@@ -356,19 +404,27 @@
     byId('delete-lesson').hidden = true;
     byId('lesson-name').value = '';
     byId('editor-title').textContent = t('newLesson');
+    byId('category-list').replaceChildren();
     byId('item-list').replaceChildren(makeItemRow(model.createItem()));
+    refreshCategorySelects();
     renderList(); byId('lesson-name').focus();
   }
 
   function collectDraft() {
     const now = new Date().toISOString();
+    const categories = [...byId('category-list').children].map(row => {
+      const names = {};
+      for (const input of row.querySelectorAll('[data-category-language]')) names[input.dataset.categoryLanguage] = input.value;
+      return { id: row.dataset.id, names };
+    });
     const items = [...byId('item-list').children].map(row => {
       const terms = {};
       for (const input of row.querySelectorAll('[data-language]')) terms[input.dataset.language] = input.value;
-      return { id: row.dataset.id, terms, media: { image: row._media.image, audio: { ...row._media.audio },
+      return { id: row.dataset.id, terms, categoryId: row.querySelector('[data-category-select]').value || null,
+        media: { image: row._media.image, audio: { ...row._media.audio },
         hotspots: row._media.hotspots.map(point => ({ ...point })) } };
     }).filter(item => Object.values(item.terms).some(term => term.trim()));
-    return { ...draft, title: byId('lesson-name').value, updatedAt: now, items };
+    return { ...draft, title: byId('lesson-name').value, updatedAt: now, categories, items };
   }
 
   async function save(event) {
@@ -541,6 +597,7 @@
   }
 
   function unavailableReason(mode) {
+    if (mode === 'categorySort') return 'needCategorySort';
     if (mode === 'picture') return 'needPictures';
     if (mode === 'pictureLabels') return 'needPictureLabels';
     if (mode === 'listening') return 'needAudio';
@@ -562,12 +619,14 @@
   }
 
   function startChallenge(lesson, mode, front, back) {
+    const categoryPlan = mode === 'categorySort' ? games.categorySortPlan(lesson, front, back) : null;
     const items = mode === 'picture' || mode === 'listening'
       ? games.mediaPairs(lesson, collection.assets, front, back, mode)
       : mode === 'pictureLabels' ? games.pictureLabelScenes(lesson, collection.assets, front, back)
       : mode === 'listenType' ? games.listeningTypingPairs(lesson, collection.assets, front, back)
       : mode === 'wordSearch' ? games.wordSearchPairs(lesson, front, back)
       : mode === 'crossword' ? games.crosswordPairs(lesson, front, back)
+      : mode === 'categorySort' ? categoryPlan?.items || []
       : ['tiles', 'missing', 'guess'].includes(mode) ? games.spellingPairs(lesson, front, back, mode)
       : games.eligiblePairs(lesson, front, back, true);
     if (['quiz', 'matching', 'memory', 'trueFalse', 'picture', 'listening'].includes(mode) && items.length < 4) {
@@ -584,6 +643,7 @@
     challenge = { mode, front, back, items: selected, index: 0, score: 0, locked: false,
       rounds: mode === 'matching' ? games.matchingRounds(items) : [], roundIndex: 0,
       matched: new Set(), selectedFront: null, selectedBack: null, attempts: 0, attemptsThisItem: 0 };
+    if (categoryPlan) challenge.categoryGroups = categoryPlan.groups;
     if (mode === 'wordSearch') challenge.search = {
       ...games.generateWordSearch(selected, back), found: new Set(), foundCells: new Set(), start: null, active: { row: 0, col: 0 }
     };
@@ -681,6 +741,8 @@
         button.addEventListener('click', () => answerQuiz(button, item));
         options.append(button);
       }
+    } else if (state.mode === 'categorySort') {
+      renderCategorySort();
     } else if (state.mode === 'tiles') {
       const clusters = games.spellingClusters(item.terms[state.back], state.back);
       state.tileOrder = games.tileOrder(clusters);
@@ -711,6 +773,46 @@
       if (state.mode === 'listenType') byId('challenge-media').querySelector('button').focus();
       else input.focus();
     }
+  }
+
+  function renderCategorySort() {
+    const state = challenge;
+    const hint = document.createElement('p'); hint.className = 'category-play-hint';
+    hint.textContent = t('categoryPrompt');
+    byId('challenge-media').append(hint);
+    const options = byId('challenge-options'); options.classList.add('category-sort-options');
+    for (const group of state.categoryGroups) {
+      const button = document.createElement('button'); button.type = 'button'; button.className = 'game-option';
+      button.dataset.categoryId = group.id;
+      setTerm(button, group.name, state.back);
+      button.addEventListener('click', () => {
+        if (state.locked) return;
+        const item = state.items[state.index];
+        const correct = item.categoryId === group.id;
+        if (!correct && ++state.attemptsThisItem < 2) {
+          const output = byId('challenge-feedback'); output.className = 'challenge-feedback negative';
+          output.textContent = t('tryCategoryAgain');
+          effects.animate(button, 'wrong'); effects.play('wrong'); button.focus();
+          return;
+        }
+        state.locked = true;
+        if (correct) state.score += 1;
+        const expected = state.categoryGroups.find(candidate => candidate.id === item.categoryId).name;
+        for (const option of options.querySelectorAll('button')) {
+          option.disabled = true;
+          if (option.dataset.categoryId === item.categoryId) option.classList.add('correct');
+          else if (option === button) option.classList.add('wrong');
+        }
+        const output = byId('challenge-feedback');
+        output.className = `challenge-feedback ${correct ? 'positive' : 'negative'}`;
+        output.textContent = correct ? t('correct') : t('categoryAnswer', { answer: expected });
+        effects.animate(button, correct ? 'correct' : 'wrong'); effects.play(correct ? 'correct' : 'wrong');
+        byId('challenge-score').textContent = t('score', { score: state.score });
+        prepareNext();
+      });
+      options.append(button);
+    }
+    options.querySelector('button').focus();
   }
 
   function renderTiles(focusTile = null) {
@@ -1419,7 +1521,13 @@
     byId('welcome-new').addEventListener('click', newLesson);
     byId('add-item').addEventListener('click', () => {
       if (byId('item-list').children.length >= 500) { message('tooManyItems'); return; }
-      byId('item-list').append(makeItemRow(model.createItem())); dirty = true;
+      byId('item-list').append(makeItemRow(model.createItem())); refreshCategorySelects(); dirty = true;
+    });
+    byId('add-category').addEventListener('click', () => {
+      if (byId('category-list').children.length >= model.MAX_CATEGORIES) { message('categoryLimit'); return; }
+      const category = { id: model.newCategoryId(), names: { en: '', pl: '', ar: '', de: '' } };
+      const row = makeCategoryRow(category); byId('category-list').append(row);
+      dirty = true; refreshCategorySelects(); row.querySelector('input').focus();
     });
     byId('lesson-form').addEventListener('input', () => { dirty = true; });
     byId('lesson-form').addEventListener('submit', save);
