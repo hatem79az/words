@@ -325,6 +325,18 @@
     return true;
   }
 
+  function trueFalseRounds(items, language, random = Math.random) {
+    if (items.length < 4) throw new Error('needFour');
+    const pool = shuffle(items, random).slice(0, 10);
+    if (pool.length % 2) pool.pop();
+    const truths = shuffle(Array.from({ length: pool.length }, (_, index) => index < pool.length / 2), random);
+    return pool.map((item, index) => {
+      const proposedItem = truths[index] ? item : pool[(index + 1 + Math.floor(random() * (pool.length - 1))) % pool.length];
+      if (!truths[index] && sameAnswer(proposedItem.terms[language], item.terms[language], language)) throw new Error('needFour');
+      return { item, proposedItem, isTrue: truths[index] };
+    });
+  }
+
   function readiness(lesson, front, back, assets = {}) {
     const cards = eligiblePairs(lesson, front, back, false);
     const distinct = eligiblePairs(lesson, front, back, true);
@@ -341,6 +353,7 @@
       quiz: distinct.length >= 4 ? distinct.length : 0,
       matching: distinct.length >= 4 ? distinct.length : 0,
       memory: distinct.length >= 4 ? distinct.length : 0,
+      trueFalse: distinct.length >= 4 ? Math.min(10, distinct.length - distinct.length % 2) : 0,
       typing: distinct.length,
       tiles,
       missing,
@@ -356,5 +369,5 @@
   return { answerKey, sameAnswer, eligiblePairs, mediaPairs, hasGraphemeSupport, spellingClusters,
     spellingPairs, listeningTypingPairs, tileOrder, missingPlan, guessOptions, wordSearchPairs,
     generateWordSearch, crosswordPairs, generateCrossword, gridPath, shuffle, quizChoices, matchingRounds,
-    createMemoryRound, memoryTurn, memoryCover, readiness };
+    createMemoryRound, memoryTurn, memoryCover, trueFalseRounds, readiness };
 });

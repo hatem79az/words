@@ -91,6 +91,22 @@ test('memory turns lock a mismatch, preserve matches, and count complete pair at
   assert.equal(round.pending, false);
 });
 
+test('true or false rounds balance proposals and use distinct answer terms', () => {
+  const value = lesson(9);
+  const items = games.eligiblePairs(value, 'de', 'ar');
+  const rounds = games.trueFalseRounds(items, 'ar', () => .37);
+  assert.equal(rounds.length, 8);
+  assert.equal(rounds.filter(round => round.isTrue).length, 4);
+  assert.equal(new Set(rounds.map(round => round.item.id)).size, 8);
+  for (const round of rounds) {
+    assert.equal(round.isTrue, round.item.id === round.proposedItem.id);
+    if (!round.isTrue) assert.notEqual(round.item.terms.ar, round.proposedItem.terms.ar);
+  }
+  assert.equal(games.readiness(value, 'de', 'ar').trueFalse, 8);
+  assert.equal(games.readiness(lesson(3), 'en', 'pl').trueFalse, 0);
+  assert.throws(() => games.trueFalseRounds(items.slice(0, 3), 'ar'), /needFour/);
+});
+
 test('typed spelling normalizes case and whitespace but preserves diacritics', () => {
   assert.equal(games.sameAnswer('  KOT  ', 'kot', 'pl'), true);
   assert.equal(games.sameAnswer('słowo', 'slowo', 'pl'), false);

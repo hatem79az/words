@@ -419,7 +419,7 @@
       : byId('back-language').value === 'ar' ? 'needLatinCrossword' : 'needCrossword';
     if (mode === 'guess') return games.hasGraphemeSupport() ? 'needGuessWords' : 'needGraphemeSupport';
     if (mode === 'tiles' || mode === 'missing') return games.hasGraphemeSupport() ? 'needSpellingWords' : 'needGraphemeSupport';
-    if (mode === 'quiz' || mode === 'matching' || mode === 'memory') return 'needFour';
+    if (['quiz', 'matching', 'memory', 'trueFalse'].includes(mode)) return 'needFour';
     return 'noCards';
   }
 
@@ -437,14 +437,16 @@
       : mode === 'crossword' ? games.crosswordPairs(lesson, front, back)
       : ['tiles', 'missing', 'guess'].includes(mode) ? games.spellingPairs(lesson, front, back, mode)
       : games.eligiblePairs(lesson, front, back, true);
-    if (['quiz', 'matching', 'memory', 'picture', 'listening'].includes(mode) && items.length < 4) {
+    if (['quiz', 'matching', 'memory', 'trueFalse', 'picture', 'listening'].includes(mode) && items.length < 4) {
       byId('practice-message').textContent = t(mode === 'picture' ? 'needPictures' : mode === 'listening' ? 'needAudio' : 'needFour'); return;
     }
     if (mode === 'wordSearch' && items.length < 3) { byId('practice-message').textContent = t(unavailableReason(mode)); return; }
     const puzzle = mode === 'crossword' ? games.generateCrossword(items, back) : null;
     if (mode === 'crossword' && !puzzle) { byId('practice-message').textContent = t(unavailableReason(mode)); return; }
     if (!items.length) { byId('practice-message').textContent = t(unavailableReason(mode)); return; }
+    const trueFalse = mode === 'trueFalse' ? games.trueFalseRounds(items, back) : null;
     const selected = mode === 'crossword' ? puzzle.entries.map(entry => items.find(item => item.id === entry.id))
+      : trueFalse ? trueFalse.map(round => round.item)
       : games.shuffle(items).slice(0, mode === 'wordSearch' ? 5 : mode === 'memory' ? 6 : items.length);
     challenge = { mode, front, back, items: selected, index: 0, score: 0, locked: false,
       rounds: mode === 'matching' ? games.matchingRounds(items) : [], roundIndex: 0,
@@ -457,6 +459,7 @@
       active: { ...puzzle.entries[0].cells[0] }
     };
     if (mode === 'memory') challenge.memory = games.createMemoryRound(selected, front, back);
+    if (trueFalse) challenge.trueFalse = trueFalse;
     byId('challenge-area').hidden = false;
     renderChallenge();
   }
@@ -511,6 +514,7 @@
     byId('challenge-meter').max = state.items.length;
     byId('challenge-meter').value = state.index + 1;
     const item = state.items[state.index];
+    if (state.mode === 'trueFalse') { renderTrueFalse(); return; }
     if (state.mode === 'picture' || state.mode === 'listening' || state.mode === 'listenType') {
       const prompt = byId('challenge-prompt');
       prompt.textContent = t(state.mode === 'picture' ? 'picturePrompt' : state.mode === 'listening' ? 'listenPrompt' : 'listenTypePrompt');
@@ -947,6 +951,54 @@
       else if (option === button) option.classList.add('wrong');
     }
     feedback(correct, button, item.terms[state.back]);
+    prepareNext();
+  }
+
+  function renderTrueFalse() {
+    const state = challenge;
+    const round = state.trueFalse[state.index];
+    byId('challenge-prompt').textContent = t('trueFalsePrompt');
+    byId('challenge-prompt').removeAttribute('lang'); byId('challenge-prompt').removeAttribute('dir');
+    const options = byId('challenge-options');
+    options.classList.add('true-false-options');
+    const pair = document.createElement('div'); pair.className = 'true-false-pair';
+    for (const [labelKey, term, language] of [
+      ['memoryFront', round.item.terms[state.front], state.front],
+      ['proposedAnswer', round.proposedItem.terms[state.back], state.back]
+    ]) {
+      const panel = document.createElement('div'); panel.className = 'true-false-term';
+      const label = document.createElement('span'); label.className = 'true-false-label'; label.textContent = t(labelKey);
+      const value = document.createElement('strong'); setTerm(value, term, language);
+      panel.append(label, value); pair.append(panel);
+    }
+    const choices = document.createElement('div'); choices.className = 'true-false-choices';
+    for (const [answer, key] of [[true, 'trueChoice'], [false, 'falseChoice']]) {
+      const button = document.createElement('button'); button.type = 'button'; button.className = 'game-option';
+      button.textContent = t(key);
+      button.addEventListener('click', () => answerTrueFalse(answer, button));
+      choices.append(button);
+    }
+    options.append(pair, choices);
+    choices.querySelector('button').focus();
+  }
+
+  function answerTrueFalse(answer, button) {
+    const state = challenge;
+    if (!state || state.mode !== 'trueFalse' || state.locked) return;
+    const round = state.trueFalse[state.index];
+    state.locked = true;
+    const correct = answer === round.isTrue;
+    if (correct) state.score += 1;
+    for (const choice of byId('challenge-options').querySelectorAll('.true-false-choices button')) {
+      choice.disabled = true;
+      if (choice === button) choice.classList.add(correct ? 'correct' : 'wrong');
+    }
+    const output = byId('challenge-feedback');
+    output.className = `challenge-feedback ${correct ? 'positive' : 'negative'}`;
+    output.textContent = !correct ? t('correctAnswer', { answer: round.item.terms[state.back] })
+      : round.isTrue ? t('correct') : t('trueFalseActual', { answer: round.item.terms[state.back] });
+    effects.animate(button, correct ? 'correct' : 'wrong'); effects.play(correct ? 'correct' : 'wrong');
+    byId('challenge-score').textContent = t('score', { score: state.score });
     prepareNext();
   }
 
