@@ -293,6 +293,38 @@
     return rounds;
   }
 
+  function createMemoryRound(items, front, back, random = Math.random) {
+    if (items.length < 4) throw new Error('needFour');
+    const cards = shuffle(items.flatMap(item => [
+      { itemId: item.id, side: 'front', language: front, term: item.terms[front] },
+      { itemId: item.id, side: 'back', language: back, term: item.terms[back] }
+    ]), random);
+    return { cards, revealed: [], matched: new Set(), attempts: 0, pending: false };
+  }
+
+  function memoryTurn(round, index) {
+    const card = round.cards[index];
+    if (!card || round.pending || round.matched.has(card.itemId) || round.revealed.includes(index)) return 'ignored';
+    round.revealed.push(index);
+    if (round.revealed.length === 1) return 'first';
+    round.attempts += 1;
+    const other = round.cards[round.revealed[0]];
+    if (other.itemId === card.itemId && other.side !== card.side) {
+      round.matched.add(card.itemId);
+      round.revealed = [];
+      return 'match';
+    }
+    round.pending = true;
+    return 'mismatch';
+  }
+
+  function memoryCover(round) {
+    if (!round.pending) return false;
+    round.revealed = [];
+    round.pending = false;
+    return true;
+  }
+
   function readiness(lesson, front, back, assets = {}) {
     const cards = eligiblePairs(lesson, front, back, false);
     const distinct = eligiblePairs(lesson, front, back, true);
@@ -308,6 +340,7 @@
       flashcards: cards.length,
       quiz: distinct.length >= 4 ? distinct.length : 0,
       matching: distinct.length >= 4 ? distinct.length : 0,
+      memory: distinct.length >= 4 ? distinct.length : 0,
       typing: distinct.length,
       tiles,
       missing,
@@ -322,5 +355,6 @@
 
   return { answerKey, sameAnswer, eligiblePairs, mediaPairs, hasGraphemeSupport, spellingClusters,
     spellingPairs, listeningTypingPairs, tileOrder, missingPlan, guessOptions, wordSearchPairs,
-    generateWordSearch, crosswordPairs, generateCrossword, gridPath, shuffle, quizChoices, matchingRounds, readiness };
+    generateWordSearch, crosswordPairs, generateCrossword, gridPath, shuffle, quizChoices, matchingRounds,
+    createMemoryRound, memoryTurn, memoryCover, readiness };
 });

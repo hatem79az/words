@@ -46,6 +46,51 @@ test('matching rounds cover all nine words without a one-card final round', () =
   assert.deepEqual(new Set(rounds.flat().map(item => item.id)), new Set(items.map(item => item.id)));
 });
 
+test('memory deck has one hidden prompt and answer card per unambiguous pair', () => {
+  const value = lesson(6);
+  value.items[5].terms.pl = value.items[4].terms.pl;
+  const items = games.eligiblePairs(value, 'en', 'pl');
+  assert.equal(items.length, 4);
+  assert.equal(games.readiness(value, 'en', 'pl').memory, 4);
+  const round = games.createMemoryRound(items, 'en', 'pl', () => .27);
+  assert.equal(round.cards.length, 8);
+  for (const item of items) {
+    assert.deepEqual(round.cards.filter(card => card.itemId === item.id).map(card => [card.side, card.language, card.term]).sort(),
+      [['back', 'pl', item.terms.pl], ['front', 'en', item.terms.en]]);
+  }
+  assert.deepEqual(round.revealed, []);
+  assert.equal(round.attempts, 0);
+  assert.equal(games.readiness(lesson(3), 'en', 'ar').memory, 0);
+  assert.throws(() => games.createMemoryRound(items.slice(0, 3), 'en', 'pl'), /needFour/);
+});
+
+test('memory turns lock a mismatch, preserve matches, and count complete pair attempts', () => {
+  const items = games.eligiblePairs(lesson(4), 'pl', 'ar');
+  const round = games.createMemoryRound(items, 'pl', 'ar', () => .31);
+  const first = round.cards.findIndex(card => card.itemId === items[0].id && card.side === 'front');
+  const other = round.cards.findIndex(card => card.itemId === items[1].id && card.side === 'back');
+  const mate = round.cards.findIndex(card => card.itemId === items[0].id && card.side === 'back');
+  assert.equal(games.memoryTurn(round, first), 'first');
+  assert.equal(games.memoryTurn(round, first), 'ignored');
+  assert.equal(games.memoryTurn(round, other), 'mismatch');
+  assert.equal(games.memoryTurn(round, mate), 'ignored');
+  assert.equal(round.attempts, 1);
+  assert.deepEqual(round.revealed, [first, other]);
+  assert.equal(games.memoryCover(round), true);
+  assert.equal(games.memoryCover(round), false);
+  assert.deepEqual(round.revealed, []);
+  for (const item of items) {
+    const front = round.cards.findIndex(card => card.itemId === item.id && card.side === 'front');
+    const back = round.cards.findIndex(card => card.itemId === item.id && card.side === 'back');
+    assert.equal(games.memoryTurn(round, front), 'first');
+    assert.equal(games.memoryTurn(round, back), 'match');
+    assert.equal(games.memoryTurn(round, front), 'ignored');
+  }
+  assert.equal(round.matched.size, 4);
+  assert.equal(round.attempts, 5);
+  assert.equal(round.pending, false);
+});
+
 test('typed spelling normalizes case and whitespace but preserves diacritics', () => {
   assert.equal(games.sameAnswer('  KOT  ', 'kot', 'pl'), true);
   assert.equal(games.sameAnswer('słowo', 'slowo', 'pl'), false);
