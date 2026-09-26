@@ -52,7 +52,7 @@
     }
     const terms = {};
     for (const language of LANGUAGES) terms[language] = cleanText(value.terms[language] ?? '', 500);
-    if (Object.values(terms).filter(Boolean).length < 2) throw new Error('twoLanguages');
+    if (!Object.values(terms).some(Boolean)) throw new Error('oneLanguage');
     const categoryId = value.categoryId ?? null;
     if (categoryId !== null && (typeof categoryId !== 'string' || !ASSET_ID.test(categoryId))) throw new Error('invalidCategories');
     const rawSentences = value.sentences ?? {};

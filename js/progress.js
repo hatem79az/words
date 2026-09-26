@@ -10,12 +10,15 @@
   const LANGUAGES = ['en', 'pl', 'ar', 'de'];
   const MODES = new Set(['flashcards', 'quiz', 'matching', 'memory', 'trueFalse', 'typing', 'tiles', 'missing',
     'picture', 'pictureLabels', 'categorySort', 'sentenceOrder', 'sentenceCompletion', 'listening',
-    'listenType', 'guess', 'wordSearch', 'crossword']);
+    'listenType', 'listenPicture', 'guess', 'wordSearch', 'crossword']);
+  const MONOLINGUAL_MODES = new Set(['tiles', 'missing', 'picture', 'pictureLabels', 'categorySort',
+    'listening', 'listenType', 'listenPicture', 'guess', 'wordSearch']);
 
   function valid(entry) {
     return entry && typeof entry === 'object' && !Array.isArray(entry) &&
       typeof entry.lessonId === 'string' && entry.lessonId.length > 0 && entry.lessonId.length <= 100 &&
-      MODES.has(entry.mode) && LANGUAGES.includes(entry.front) && LANGUAGES.includes(entry.back) && entry.front !== entry.back &&
+      MODES.has(entry.mode) && LANGUAGES.includes(entry.front) && LANGUAGES.includes(entry.back) &&
+      (entry.front !== entry.back || MONOLINGUAL_MODES.has(entry.mode)) &&
       Number.isInteger(entry.total) && entry.total > 0 && entry.total <= 500 &&
       (entry.mode === 'flashcards' ? entry.score === null : Number.isInteger(entry.score) && entry.score >= 0 && entry.score <= entry.total) &&
       typeof entry.finishedAt === 'string' && entry.finishedAt.length <= 40 && Number.isFinite(Date.parse(entry.finishedAt));

@@ -27,6 +27,18 @@
     return items.filter(item => frontCounts.get(answerKey(item.terms[front], front)) === 1 && backCounts.get(answerKey(item.terms[back], back)) === 1);
   }
 
+  function languageItems(lesson, language, requireUnique = true) {
+    if (!model.LANGUAGES.includes(language)) return [];
+    const items = model.validateLesson(lesson).items.filter(item => item.terms[language]);
+    if (!requireUnique) return items;
+    const counts = new Map();
+    for (const item of items) {
+      const key = answerKey(item.terms[language], language);
+      counts.set(key, (counts.get(key) || 0) + 1);
+    }
+    return items.filter(item => counts.get(answerKey(item.terms[language], language)) === 1);
+  }
+
   function shuffle(items, random = Math.random) {
     const result = [...items];
     for (let i = result.length - 1; i > 0; i -= 1) {
@@ -44,7 +56,9 @@
 
   function mediaPairs(lesson, assets, front, back, mode) {
     const clueFor = item => assets[mode === 'picture' ? item.media.image : item.media.audio[front]]?.data;
-    const pairs = eligiblePairs(lesson, front, back, true).filter(item => {
+    const candidates = mode === 'picture' ? languageItems(lesson, back)
+      : front === back ? languageItems(lesson, back) : eligiblePairs(lesson, front, back, true);
+    const pairs = candidates.filter(item => {
       return Boolean(clueFor(item));
     });
     const clues = new Map();
@@ -55,8 +69,23 @@
     return pairs.filter(item => clues.get(clueFor(item)) === 1);
   }
 
+  function listeningPicturePairs(lesson, assets, language) {
+    const pairs = languageItems(lesson, language).filter(item =>
+      Boolean(assets[item.media.audio[language]]?.data && assets[item.media.image]?.data));
+    const recordings = new Map();
+    const pictures = new Map();
+    for (const item of pairs) {
+      const recording = assets[item.media.audio[language]].data;
+      const picture = assets[item.media.image].data;
+      recordings.set(recording, (recordings.get(recording) || 0) + 1);
+      pictures.set(picture, (pictures.get(picture) || 0) + 1);
+    }
+    return pairs.filter(item => recordings.get(assets[item.media.audio[language]].data) === 1 &&
+      pictures.get(assets[item.media.image].data) === 1);
+  }
+
   function pictureLabelScenes(lesson, assets, front, back) {
-    const available = new Map(eligiblePairs(lesson, front, back, true).map(item => [item.id, item]));
+    const available = new Map(languageItems(lesson, back).map(item => [item.id, item]));
     return lesson.items.flatMap(item => {
       if (!item.media?.image || !assets[item.media.image]?.data) return [];
       const hotspots = (item.media.hotspots || []).flatMap(point => {
@@ -80,12 +109,15 @@
     return clusters;
   }
 
-  function spellingPairs(lesson, front, back, mode) {
-    return eligiblePairs(lesson, front, back, true).filter(item => {
+  function spellingPairs(lesson, front, back, mode, assets = {}) {
+    const candidates = mode === 'tiles' && front !== back ? eligiblePairs(lesson, front, back, true) : languageItems(lesson, back);
+    return candidates.filter(item => {
       const clusters = spellingClusters(item.terms[back], back);
       const minimum = mode === 'missing' ? 4 : 3;
       const maximum = mode === 'wordSearch' ? 8 : mode === 'guess' ? 10 : 14;
-      return clusters.length >= minimum && clusters.length <= maximum &&
+      const clueAvailable = mode !== 'tiles' || front !== back ||
+        Boolean(assets[item.media.image]?.data || assets[item.media.audio[back]]?.data);
+      return clueAvailable && clusters.length >= minimum && clusters.length <= maximum &&
         new Set(clusters.map(cluster => answerKey(cluster, back))).size >= 2;
     });
   }
@@ -111,8 +143,12 @@
   }
 
   function crosswordPairs(lesson, front, back) {
-    return wordSearchPairs(lesson, front, back).filter(item =>
-      spellingClusters(item.terms[back], back).every(letter => /^\p{Script=Latin}\p{M}*$/u.test(letter)));
+    if (front === back) return [];
+    return eligiblePairs(lesson, front, back, true).filter(item => {
+      const clusters = spellingClusters(item.terms[back], back);
+      return clusters.length >= 3 && clusters.length <= 8 &&
+        clusters.every(letter => /^\p{Script=Latin}\p{M}*$/u.test(letter));
+    });
   }
 
   function generateCrossword(items, language) {
@@ -269,7 +305,13 @@
   }
 
   function listeningTypingPairs(lesson, assets, front, back) {
-    return mediaPairs(lesson, assets, back, front, 'listening');
+    const pairs = languageItems(lesson, back).filter(item => Boolean(assets[item.media.audio[back]]?.data));
+    const recordings = new Map();
+    for (const item of pairs) {
+      const recording = assets[item.media.audio[back]].data;
+      recordings.set(recording, (recordings.get(recording) || 0) + 1);
+    }
+    return pairs.filter(item => recordings.get(assets[item.media.audio[back]].data) === 1);
   }
 
   function tileOrder(clusters, random = Math.random) {
@@ -350,7 +392,7 @@
   }
 
   function categorySortPlan(lesson, front, back, random = Math.random) {
-    const pairs = eligiblePairs(lesson, front, back, true);
+    const pairs = front === back ? languageItems(lesson, back) : eligiblePairs(lesson, front, back, true);
     const available = (lesson.categories || []).map(category => ({
       id: category.id, name: category.names[back],
       items: pairs.filter(item => item.categoryId === category.id)
@@ -424,7 +466,8 @@
     const pictures = mediaPairs(lesson, assets, front, back, 'picture').length;
     const pictureLabels = pictureLabelScenes(lesson, assets, front, back).length;
     const listening = mediaPairs(lesson, assets, front, back, 'listening').length;
-    const tiles = spellingPairs(lesson, front, back, 'tiles').length;
+    const listenPicture = listeningPicturePairs(lesson, assets, front).length;
+    const tiles = spellingPairs(lesson, front, back, 'tiles', assets).length;
     const missing = spellingPairs(lesson, front, back, 'missing').length;
     const listenType = listeningTypingPairs(lesson, assets, front, back).length;
     const guess = spellingPairs(lesson, front, back, 'guess').length;
@@ -440,6 +483,7 @@
       tiles,
       missing,
       listenType,
+      listenPicture: listenPicture >= 4 ? listenPicture : 0,
       guess,
       wordSearch: wordSearchItems >= 3 ? wordSearchItems : 0,
       crossword: crossword ? crossword.entries.length : 0,
@@ -452,7 +496,8 @@
     };
   }
 
-  return { answerKey, sameAnswer, eligiblePairs, mediaPairs, pictureLabelScenes, categorySortPlan, sentenceOrderPairs, sentenceTileOrder,
+  return { answerKey, sameAnswer, eligiblePairs, languageItems, mediaPairs, listeningPicturePairs,
+    pictureLabelScenes, categorySortPlan, sentenceOrderPairs, sentenceTileOrder,
     sentenceCompletionPairs, completionParts, completionMatches,
     hasGraphemeSupport, spellingClusters,
     spellingPairs, listeningTypingPairs, tileOrder, missingPlan, guessOptions, wordSearchPairs,

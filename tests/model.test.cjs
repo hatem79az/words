@@ -41,7 +41,9 @@ test('invalid imports are rejected before they replace existing lessons', () => 
   assert.throws(() => model.validateCollection({ ...valid, lessons: [valid.lessons[0], valid.lessons[0]] }), /duplicateId/);
   const incomplete = structuredClone(valid);
   incomplete.lessons[0].items[0].terms = { en: 'cat', pl: '', ar: '', de: '' };
-  assert.throws(() => model.validateCollection(incomplete), /twoLanguages/);
+  assert.equal(model.validateCollection(incomplete).lessons[0].items[0].terms.en, 'cat');
+  incomplete.lessons[0].items[0].terms.en = '';
+  assert.throws(() => model.validateCollection(incomplete), /oneLanguage/);
   assert.equal(valid.lessons[0].items[0].terms.pl, 'kot');
 });
 

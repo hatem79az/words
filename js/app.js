@@ -10,6 +10,8 @@
   const UI_KEY = 'words.uiLanguage.v1';
   const MODE_LABEL_KEYS = { tiles: 'letterTiles', missing: 'missingLettersGame', picture: 'pictureChoice',
     listening: 'listenChoose', guess: 'letterGuess' };
+  const MONOLINGUAL_MODES = new Set(['tiles', 'missing', 'picture', 'pictureLabels', 'categorySort',
+    'listening', 'listenType', 'listenPicture', 'guess', 'wordSearch']);
   const byId = id => document.getElementById(id);
   let collection = model.newCollection();
   let currentId = null;
@@ -327,7 +329,7 @@
     select.replaceChildren();
     for (const target of byId('item-list').children) {
       const terms = [...target.querySelectorAll('[data-language]')].map(input => input.value.trim()).filter(Boolean);
-      if (terms.length < 2) continue;
+      if (!terms.length) continue;
       const option = document.createElement('option'); option.value = target.dataset.id;
       option.textContent = terms.slice(0, 2).join(' · ');
       select.append(option);
@@ -596,11 +598,11 @@
   function startDeck() {
     const front = byId('front-language').value;
     const back = byId('back-language').value;
+    const mode = byId('game-mode').value;
     resetDeck();
-    if (front === back) { byId('practice-message').textContent = t('chooseTwo'); return; }
+    if (front === back && !MONOLINGUAL_MODES.has(mode)) { byId('practice-message').textContent = t('chooseTwo'); return; }
     const saved = collection.lessons.find(lesson => lesson.id === currentId);
     if (!saved) return;
-    const mode = byId('game-mode').value;
     if (mode !== 'flashcards') { startChallenge(saved, mode, front, back); return; }
     deck = model.cardsFor(saved, front, back);
     cardIndex = 0;
@@ -670,9 +672,9 @@
     if (!saved) { byId('activity-readiness').textContent = ''; return; }
     const front = byId('front-language').value;
     const back = byId('back-language').value;
-    if (front === back) { byId('activity-readiness').textContent = t('chooseTwo'); return; }
-    const counts = games.readiness(saved, front, back, collection.assets);
     const mode = byId('game-mode').value;
+    if (front === back && !MONOLINGUAL_MODES.has(mode)) { byId('activity-readiness').textContent = t('chooseTwo'); return; }
+    const counts = games.readiness(saved, front, back, collection.assets);
     byId('activity-readiness').textContent = counts[mode]
       ? t(mode === 'pictureLabels' ? 'readyLabelPictures' : 'readyItems', { count: counts[mode] })
       : t(unavailableReason(mode));
@@ -693,7 +695,8 @@
       const row = document.createElement('li');
       const activity = document.createElement('strong'); activity.textContent = t(MODE_LABEL_KEYS[entry.mode] || entry.mode);
       const direction = document.createElement('bdi'); direction.dir = 'ltr'; direction.className = 'progress-meta';
-      direction.textContent = `${entry.front.toUpperCase()} → ${entry.back.toUpperCase()}`;
+      direction.textContent = entry.front === entry.back ? entry.back.toUpperCase()
+        : `${entry.front.toUpperCase()} → ${entry.back.toUpperCase()}`;
       const result = document.createElement('span'); result.className = 'progress-meta';
       result.textContent = entry.score === null ? t('progressCards', { total: entry.total })
         : t('progressResult', { score: entry.score, total: entry.total });
@@ -734,13 +737,15 @@
     if (mode === 'picture') return 'needPictures';
     if (mode === 'pictureLabels') return 'needPictureLabels';
     if (mode === 'listening') return 'needAudio';
+    if (mode === 'listenPicture') return 'needListenPictures';
     if (mode === 'listenType') return 'needRecordedAnswers';
     if (mode === 'wordSearch') return !games.hasGraphemeSupport() ? 'needGraphemeSupport'
       : byId('back-language').value === 'ar' ? 'needLatinWordSearch' : 'needWordSearch';
     if (mode === 'crossword') return !games.hasGraphemeSupport() ? 'needGraphemeSupport'
       : byId('back-language').value === 'ar' ? 'needLatinCrossword' : 'needCrossword';
     if (mode === 'guess') return games.hasGraphemeSupport() ? 'needGuessWords' : 'needGraphemeSupport';
-    if (mode === 'tiles' || mode === 'missing') return games.hasGraphemeSupport() ? 'needSpellingWords' : 'needGraphemeSupport';
+    if (mode === 'tiles') return games.hasGraphemeSupport() ? 'needTileWords' : 'needGraphemeSupport';
+    if (mode === 'missing') return games.hasGraphemeSupport() ? 'needSpellingWords' : 'needGraphemeSupport';
     if (['quiz', 'matching', 'memory', 'trueFalse'].includes(mode)) return 'needFour';
     return 'noCards';
   }
@@ -755,6 +760,7 @@
     const categoryPlan = mode === 'categorySort' ? games.categorySortPlan(lesson, front, back) : null;
     const items = mode === 'picture' || mode === 'listening'
       ? games.mediaPairs(lesson, collection.assets, front, back, mode)
+      : mode === 'listenPicture' ? games.listeningPicturePairs(lesson, collection.assets, front)
       : mode === 'pictureLabels' ? games.pictureLabelScenes(lesson, collection.assets, front, back)
       : mode === 'listenType' ? games.listeningTypingPairs(lesson, collection.assets, front, back)
       : mode === 'wordSearch' ? games.wordSearchPairs(lesson, front, back)
@@ -762,10 +768,11 @@
       : mode === 'categorySort' ? categoryPlan?.items || []
       : mode === 'sentenceOrder' ? games.sentenceOrderPairs(lesson, front, back)
       : mode === 'sentenceCompletion' ? games.sentenceCompletionPairs(lesson, front, back)
-      : ['tiles', 'missing', 'guess'].includes(mode) ? games.spellingPairs(lesson, front, back, mode)
+      : ['tiles', 'missing', 'guess'].includes(mode) ? games.spellingPairs(lesson, front, back, mode, collection.assets)
       : games.eligiblePairs(lesson, front, back, true);
-    if (['quiz', 'matching', 'memory', 'trueFalse', 'picture', 'listening'].includes(mode) && items.length < 4) {
-      byId('practice-message').textContent = t(mode === 'picture' ? 'needPictures' : mode === 'listening' ? 'needAudio' : 'needFour'); return;
+    if (['quiz', 'matching', 'memory', 'trueFalse', 'picture', 'listening', 'listenPicture'].includes(mode) && items.length < 4) {
+      byId('practice-message').textContent = t(mode === 'picture' ? 'needPictures'
+        : mode === 'listening' ? 'needAudio' : mode === 'listenPicture' ? 'needListenPictures' : 'needFour'); return;
     }
     if (mode === 'wordSearch' && items.length < 3) { byId('practice-message').textContent = t(unavailableReason(mode)); return; }
     const puzzle = mode === 'crossword' ? games.generateCrossword(items, back) : null;
@@ -860,9 +867,10 @@
     byId('challenge-meter').value = state.index + 1;
     const item = state.items[state.index];
     if (state.mode === 'trueFalse') { renderTrueFalse(); return; }
-    if (state.mode === 'picture' || state.mode === 'listening' || state.mode === 'listenType') {
+    if (state.mode === 'picture' || state.mode === 'listening' || state.mode === 'listenType' || state.mode === 'listenPicture') {
       const prompt = byId('challenge-prompt');
-      prompt.textContent = t(state.mode === 'picture' ? 'picturePrompt' : state.mode === 'listening' ? 'listenPrompt' : 'listenTypePrompt');
+      prompt.textContent = t(state.mode === 'picture' ? 'picturePrompt' : state.mode === 'listening' ? 'listenPrompt'
+        : state.mode === 'listenPicture' ? 'listenPicturePrompt' : 'listenTypePrompt');
       prompt.removeAttribute('lang'); prompt.removeAttribute('dir');
       if (state.mode === 'picture') {
         const image = document.createElement('img'); image.className = 'question-picture';
@@ -875,6 +883,11 @@
         play.addEventListener('click', () => media.play(assetFor(item.media.audio[recordingLanguage]), () => message('audioPlaybackFailed')));
         byId('challenge-media').append(play);
       }
+    } else if (state.front === state.back && ['tiles', 'missing', 'guess'].includes(state.mode)) {
+      const promptKey = state.mode === 'tiles' ? 'buildWordPrompt' : state.mode === 'missing' ? 'completeWordPrompt' : 'guessWordPrompt';
+      byId('challenge-prompt').textContent = t(promptKey);
+      byId('challenge-prompt').removeAttribute('lang'); byId('challenge-prompt').removeAttribute('dir');
+      if (state.mode === 'tiles') renderWordMediaClue(item, state.back);
     } else setTerm(byId('challenge-prompt'), ['sentenceOrder', 'sentenceCompletion'].includes(state.mode)
       ? item.sentences[state.front].join(' ') : item.terms[state.front], state.front);
     if (['quiz', 'picture', 'listening'].includes(state.mode)) {
@@ -884,6 +897,15 @@
         button.addEventListener('click', () => answerQuiz(button, item));
         options.append(button);
       }
+    } else if (state.mode === 'listenPicture') {
+      options.classList.add('quiz-options', 'picture-answer-options');
+      games.quizChoices(item, state.items).forEach((choice, index) => {
+        const button = document.createElement('button'); button.type = 'button'; button.className = 'game-option picture-answer';
+        button.dataset.itemId = choice.id;
+        button.setAttribute('aria-label', t('pictureOption', { number: index + 1 }));
+        const image = document.createElement('img'); image.src = assetFor(choice.media.image).data; image.alt = '';
+        button.append(image); button.addEventListener('click', () => answerQuiz(button, item)); options.append(button);
+      });
     } else if (state.mode === 'categorySort') {
       renderCategorySort();
     } else if (state.mode === 'sentenceOrder') {
@@ -928,6 +950,21 @@
       input.spellcheck = false;
       if (state.mode === 'listenType') byId('challenge-media').querySelector('button').focus();
       else input.focus();
+    }
+  }
+
+  function renderWordMediaClue(item, language) {
+    const picture = assetFor(item.media.image);
+    if (picture) {
+      const image = document.createElement('img'); image.className = 'question-picture'; image.src = picture.data; image.alt = t('pictureClue');
+      byId('challenge-media').append(image);
+    }
+    const recording = assetFor(item.media.audio[language]);
+    if (recording) {
+      const play = document.createElement('button'); play.type = 'button'; play.className = 'listen-button';
+      play.textContent = `▶ ${t('playAudio')}`;
+      play.addEventListener('click', () => media.play(recording, () => message('audioPlaybackFailed')));
+      byId('challenge-media').append(play);
     }
   }
 
@@ -1558,7 +1595,7 @@
       if (option.dataset.itemId === item.id) option.classList.add('correct');
       else if (option === button) option.classList.add('wrong');
     }
-    feedback(correct, button, item.terms[state.back]);
+    feedback(correct, button, item.terms[state.mode === 'listenPicture' ? state.front : state.back]);
     prepareNext();
   }
 
