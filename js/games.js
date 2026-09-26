@@ -72,8 +72,79 @@
     return eligiblePairs(lesson, front, back, true).filter(item => {
       const clusters = spellingClusters(item.terms[back], back);
       const minimum = mode === 'missing' ? 4 : 3;
-      return clusters.length >= minimum && new Set(clusters.map(cluster => answerKey(cluster, back))).size >= 2;
+      const maximum = mode === 'wordSearch' ? 8 : mode === 'guess' ? 10 : 14;
+      return clusters.length >= minimum && clusters.length <= maximum &&
+        new Set(clusters.map(cluster => answerKey(cluster, back))).size >= 2;
     });
+  }
+
+  const ALPHABETS = Object.freeze({
+    en: 'abcdefghijklmnopqrstuvwxyz',
+    pl: 'aąbcćdeęfghijklłmnńoópqrsśtuvwxyzźż',
+    de: 'abcdefghijklmnopqrstuvwxyzäöüß',
+    ar: 'ابتثجحخدذرزسشصضطظعغفقكلمنهويءأإآؤئىة'
+  });
+
+  function guessOptions(clusters, language, random = Math.random) {
+    const letters = [...new Map(clusters.map(letter => [answerKey(letter, language), answerKey(letter, language)])).values()];
+    const known = new Set(letters);
+    const distractors = shuffle(Array.from(ALPHABETS[language] || ALPHABETS.en).filter(letter => !known.has(letter)), random)
+      .slice(0, Math.max(12, 20 - letters.length));
+    return shuffle([...letters, ...distractors], random);
+  }
+
+  function wordSearchPairs(lesson, front, back) {
+    if (back === 'ar') return [];
+    return spellingPairs(lesson, front, back, 'wordSearch');
+  }
+
+  function gridPath(start, end) {
+    if (!start || !end || (start.row !== end.row && start.col !== end.col)) return [];
+    const length = Math.max(Math.abs(end.row - start.row), Math.abs(end.col - start.col)) + 1;
+    if (length < 2) return [];
+    const dr = Math.sign(end.row - start.row);
+    const dc = Math.sign(end.col - start.col);
+    return Array.from({ length }, (_, index) => ({ row: start.row + index * dr, col: start.col + index * dc }));
+  }
+
+  function generateWordSearch(items, language, random = Math.random) {
+    if (!ALPHABETS[language] || language === 'ar' || items.length < 3) throw new Error('needWordSearch');
+    const words = items.slice(0, 5).map(item => ({
+      id: item.id,
+      letters: spellingClusters(item.terms[language], language).map(letter => answerKey(letter, language))
+    }));
+    if (words.some(word => word.letters.length < 3 || word.letters.length > 8)) throw new Error('needWordSearch');
+    let size = Math.max(8, ...words.map(word => word.letters.length + 2));
+    let grid = Array.from({ length: size }, () => Array(size).fill(null));
+    let placements = [];
+    let failed = false;
+    for (const word of words) {
+      let placed = false;
+      for (let attempt = 0; attempt < 250 && !placed; attempt += 1) {
+        const vertical = random() < .5;
+        const row = Math.floor(random() * (size - (vertical ? word.letters.length : 1) + 1));
+        const col = Math.floor(random() * (size - (vertical ? 1 : word.letters.length) + 1));
+        const cells = word.letters.map((_, index) => ({ row: row + (vertical ? index : 0), col: col + (vertical ? 0 : index) }));
+        if (cells.some(({ row: r, col: c }, index) => grid[r][c] && grid[r][c] !== word.letters[index])) continue;
+        cells.forEach(({ row: r, col: c }, index) => { grid[r][c] = word.letters[index]; });
+        placements.push({ id: word.id, cells }); placed = true;
+      }
+      if (!placed) { failed = true; break; }
+    }
+    if (failed) {
+      size = Math.max(10, size);
+      grid = Array.from({ length: size }, () => Array(size).fill(null));
+      placements = words.map((word, index) => {
+        const row = index * 2;
+        const cells = word.letters.map((letter, col) => { grid[row][col] = letter; return { row, col }; });
+        return { id: word.id, cells };
+      });
+    }
+    const fillers = Array.from(ALPHABETS[language]);
+    for (const row of grid) for (let col = 0; col < row.length; col += 1) {
+      if (!row[col]) row[col] = fillers[Math.floor(random() * fillers.length)];
+    }
+    return { grid, placements };
   }
 
   function listeningTypingPairs(lesson, assets, front, back) {
@@ -121,6 +192,8 @@
     const tiles = spellingPairs(lesson, front, back, 'tiles').length;
     const missing = spellingPairs(lesson, front, back, 'missing').length;
     const listenType = listeningTypingPairs(lesson, assets, front, back).length;
+    const guess = spellingPairs(lesson, front, back, 'guess').length;
+    const wordSearchItems = wordSearchPairs(lesson, front, back).length;
     return {
       flashcards: cards.length,
       quiz: distinct.length >= 4 ? distinct.length : 0,
@@ -129,11 +202,14 @@
       tiles,
       missing,
       listenType,
+      guess,
+      wordSearch: wordSearchItems >= 3 ? wordSearchItems : 0,
       picture: pictures >= 4 ? pictures : 0,
       listening: listening >= 4 ? listening : 0
     };
   }
 
   return { answerKey, sameAnswer, eligiblePairs, mediaPairs, hasGraphemeSupport, spellingClusters,
-    spellingPairs, listeningTypingPairs, tileOrder, missingPlan, shuffle, quizChoices, matchingRounds, readiness };
+    spellingPairs, listeningTypingPairs, tileOrder, missingPlan, guessOptions, wordSearchPairs,
+    generateWordSearch, gridPath, shuffle, quizChoices, matchingRounds, readiness };
 });
