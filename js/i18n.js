@@ -85,7 +85,12 @@
       crosswordProgress: '{count} of {total} clues solved', crosswordGrid: 'Crossword grid',
       crosswordCell: 'Row {row}, column {col}', crosswordStart: 'start {number}', crosswordKnown: 'letter {letter}',
       crosswordAcross: 'Across', crosswordDown: 'Down', crosswordPattern: 'Known letters: {pattern}',
-      crosswordRetry: 'Not quite. Edit your answer and try again.'
+      crosswordRetry: 'Not quite. Edit your answer and try again.',
+      lessonCategories: 'Categories', addCategory: 'Add category', categoryHint: 'Name each group in the answer languages you want to use, then assign words below.',
+      categoryForWord: 'Category', noCategory: 'No category', unnamedCategory: 'Unnamed category', categoryLimit: 'A lesson can have up to 30 categories.',
+      invalidCategories: 'Give every category a name, use distinct names in each language, and assign words only to existing categories.',
+      categorySort: 'Category sort', needCategorySort: 'Add at least two named categories in the answer language, with two distinct word pairs in each.',
+      categoryPrompt: 'Choose the category for this word.', tryCategoryAgain: 'Try another category.', categoryAnswer: 'The category is {answer}.'
     },
     pl: {
       skip: 'Przejdź do treści', interfaceLanguage: 'Język interfejsu', yourCollection: 'Twoja kolekcja', lessons: 'Lekcje', newLesson: 'Nowa lekcja',
@@ -171,7 +176,12 @@
       crosswordProgress: 'Rozwiązano {count} z {total} haseł', crosswordGrid: 'Siatka krzyżówki',
       crosswordCell: 'Wiersz {row}, kolumna {col}', crosswordStart: 'początek {number}', crosswordKnown: 'litera {letter}',
       crosswordAcross: 'Poziomo', crosswordDown: 'Pionowo', crosswordPattern: 'Znane litery: {pattern}',
-      crosswordRetry: 'Jeszcze nie. Popraw odpowiedź i spróbuj ponownie.'
+      crosswordRetry: 'Jeszcze nie. Popraw odpowiedź i spróbuj ponownie.',
+      lessonCategories: 'Kategorie', addCategory: 'Dodaj kategorię', categoryHint: 'Nazwij grupy w językach odpowiedzi, których chcesz używać, i przypisz słowa poniżej.',
+      categoryForWord: 'Kategoria', noCategory: 'Bez kategorii', unnamedCategory: 'Kategoria bez nazwy', categoryLimit: 'Lekcja może mieć najwyżej 30 kategorii.',
+      invalidCategories: 'Nazwij każdą kategorię, użyj różnych nazw w każdym języku i przypisuj słowa tylko do istniejących kategorii.',
+      categorySort: 'Sortowanie kategorii', needCategorySort: 'Dodaj co najmniej dwie nazwane kategorie w języku odpowiedzi, po dwie różne pary słów w każdej.',
+      categoryPrompt: 'Wybierz kategorię dla tego słowa.', tryCategoryAgain: 'Spróbuj innej kategorii.', categoryAnswer: 'Poprawna kategoria: {answer}.'
     },
     ar: {
       skip: 'انتقل إلى المحتوى', interfaceLanguage: 'لغة الواجهة', yourCollection: 'مجموعتك', lessons: 'الدروس', newLesson: 'درس جديد',
@@ -257,7 +267,12 @@
       crosswordProgress: 'حُلّ {count} من {total} تلميحات', crosswordGrid: 'شبكة الكلمات المتقاطعة',
       crosswordCell: 'الصف {row}، العمود {col}', crosswordStart: 'البداية {number}', crosswordKnown: 'الحرف {letter}',
       crosswordAcross: 'أفقي', crosswordDown: 'عمودي', crosswordPattern: 'الحروف المعروفة: {pattern}',
-      crosswordRetry: 'ليست صحيحة بعد. عدّل إجابتك وحاول مرة أخرى.'
+      crosswordRetry: 'ليست صحيحة بعد. عدّل إجابتك وحاول مرة أخرى.',
+      lessonCategories: 'الفئات', addCategory: 'أضف فئة', categoryHint: 'سمّ المجموعات بلغات الإجابة التي تريد استخدامها، ثم عيّن الكلمات أدناه.',
+      categoryForWord: 'الفئة', noCategory: 'بلا فئة', unnamedCategory: 'فئة بلا اسم', categoryLimit: 'يمكن أن يحتوي الدرس على ٣٠ فئة كحد أقصى.',
+      invalidCategories: 'سمّ كل فئة، واستخدم أسماء مختلفة في كل لغة، وعيّن الكلمات إلى فئات موجودة فقط.',
+      categorySort: 'تصنيف الكلمات', needCategorySort: 'أضف فئتين مسمّاتين على الأقل بلغة الإجابة، وفي كل فئة زوجان مختلفان من الكلمات.',
+      categoryPrompt: 'اختر فئة هذه الكلمة.', tryCategoryAgain: 'جرّب فئة أخرى.', categoryAnswer: 'الفئة الصحيحة هي {answer}.'
     },
     de: {
       skip: 'Zum Inhalt springen', interfaceLanguage: 'Sprache der Oberfläche', yourCollection: 'Deine Sammlung', lessons: 'Lektionen', newLesson: 'Neue Lektion',
@@ -343,7 +358,12 @@
       crosswordProgress: '{count} von {total} Hinweisen gelöst', crosswordGrid: 'Kreuzworträtselgitter',
       crosswordCell: 'Zeile {row}, Spalte {col}', crosswordStart: 'Anfang {number}', crosswordKnown: 'Buchstabe {letter}',
       crosswordAcross: 'Waagerecht', crosswordDown: 'Senkrecht', crosswordPattern: 'Bekannte Buchstaben: {pattern}',
-      crosswordRetry: 'Noch nicht richtig. Bearbeite die Antwort und versuche es erneut.'
+      crosswordRetry: 'Noch nicht richtig. Bearbeite die Antwort und versuche es erneut.',
+      lessonCategories: 'Kategorien', addCategory: 'Kategorie hinzufügen', categoryHint: 'Benenne die Gruppen in den gewünschten Antwortsprachen und ordne unten Wörter zu.',
+      categoryForWord: 'Kategorie', noCategory: 'Keine Kategorie', unnamedCategory: 'Unbenannte Kategorie', categoryLimit: 'Eine Lektion kann höchstens 30 Kategorien haben.',
+      invalidCategories: 'Benenne jede Kategorie, verwende in jeder Sprache unterschiedliche Namen und ordne Wörter nur vorhandenen Kategorien zu.',
+      categorySort: 'Kategorien sortieren', needCategorySort: 'Füge mindestens zwei benannte Kategorien in der Antwortsprache mit je zwei unterschiedlichen Wortpaaren hinzu.',
+      categoryPrompt: 'Wähle die Kategorie für dieses Wort.', tryCategoryAgain: 'Versuche eine andere Kategorie.', categoryAnswer: 'Die Kategorie ist {answer}.'
     }
   };
   root.WordsI18n = { strings, languageNames: { en: 'english', pl: 'polish', ar: 'arabic', de: 'german' } };

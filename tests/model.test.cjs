@@ -45,11 +45,13 @@ test('invalid imports are rejected before they replace existing lessons', () => 
   assert.equal(valid.lessons[0].items[0].terms.pl, 'kot');
 });
 
-test('old text-only exports migrate to version 3 without losing terms', () => {
+test('old text-only exports migrate to version 4 without losing terms', () => {
   const oldLesson = lesson();
   oldLesson.items.forEach(item => { item.media = { image: null, audio: null }; });
   const upgraded = model.validateCollection({ schemaVersion: 1, lessons: [oldLesson] });
-  assert.equal(upgraded.schemaVersion, 3);
+  assert.equal(upgraded.schemaVersion, 4);
+  assert.deepEqual(upgraded.lessons[0].categories, []);
+  assert.equal(upgraded.lessons[0].items[0].categoryId, null);
   assert.deepEqual(upgraded.assets, {});
   assert.equal(upgraded.lessons[0].items[0].terms.ar, 'قطة');
   assert.deepEqual(upgraded.lessons[0].items[0].media.audio, {});
@@ -81,7 +83,7 @@ test('picture markers survive save, export, older import, and duplicate with rem
   ];
   const assets = { scene: { mime: 'image/webp', data: 'data:image/webp;base64,UklGRg==' } };
   const saved = model.saveLesson(model.newCollection(), value, assets);
-  assert.equal(saved.schemaVersion, 3);
+  assert.equal(saved.schemaVersion, 4);
   assert.deepEqual(model.validateCollection(JSON.parse(JSON.stringify(saved))), saved);
   const copy = model.duplicateLesson(saved.lessons[0]);
   assert.deepEqual(copy.items[0].media.hotspots.map(point => point.itemId), [copy.items[1].id, copy.items[2].id]);
@@ -90,8 +92,43 @@ test('picture markers survive save, export, older import, and duplicate with rem
   previous.schemaVersion = 2;
   previous.lessons[0].items.forEach(item => { delete item.media.hotspots; });
   const migrated = model.validateCollection(previous);
-  assert.equal(migrated.schemaVersion, 3);
+  assert.equal(migrated.schemaVersion, 4);
   assert.deepEqual(migrated.lessons[0].items[0].media.hotspots, []);
+});
+
+test('categories and membership survive save, export, prior version import, and duplicate', () => {
+  const value = lesson();
+  value.categories = [
+    { id: 'animals', names: { en: 'Animals', pl: 'Zwierzęta', ar: 'حيوانات', de: 'Tiere' } },
+    { id: 'other', names: { en: 'Other', pl: 'Inne', ar: 'غيرها', de: 'Andere' } }
+  ];
+  value.items[0].categoryId = 'animals'; value.items[1].categoryId = 'other';
+  const saved = model.saveLesson(model.newCollection(), value);
+  assert.deepEqual(model.validateCollection(JSON.parse(JSON.stringify(saved))), saved);
+  const copy = model.duplicateLesson(saved.lessons[0]);
+  assert.notEqual(copy.categories[0].id, 'animals');
+  assert.equal(copy.items[0].categoryId, copy.categories[0].id);
+  assert.equal(copy.items[1].categoryId, copy.categories[1].id);
+  copy.categories[0].names.ar = 'مختلف';
+  assert.equal(saved.lessons[0].categories[0].names.ar, 'حيوانات');
+  const prior = structuredClone(saved); prior.schemaVersion = 3;
+  delete prior.lessons[0].categories;
+  prior.lessons[0].items.forEach(item => { delete item.categoryId; });
+  const migrated = model.validateCollection(prior);
+  assert.deepEqual(migrated.lessons[0].categories, []);
+  assert.equal(migrated.lessons[0].items[0].categoryId, null);
+});
+
+test('categories reject missing names, ambiguous names, and broken memberships', () => {
+  const value = lesson();
+  value.categories = [{ id: 'a', names: { en: 'Nature' } }, { id: 'b', names: { en: 'nature' } }];
+  assert.throws(() => model.validateLesson(value), /invalidCategories/);
+  value.categories[1].names.en = 'Places';
+  value.items[0].categoryId = 'missing';
+  assert.throws(() => model.validateLesson(value), /invalidCategories/);
+  value.items[0].categoryId = 'a';
+  value.categories[1].names.en = '';
+  assert.throws(() => model.validateLesson(value), /invalidCategories/);
 });
 
 test('picture markers reject missing images, broken references, overlapping or invalid positions', () => {

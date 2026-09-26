@@ -22,6 +22,24 @@ test('four language pairs are selected without assuming Polish is the target', (
   assert.equal(games.eligiblePairs(value, 'ar', 'en').length, 4);
 });
 
+test('category sort uses saved groups with two unique pairs each in the answer language', () => {
+  const value = lesson(7);
+  value.categories = [
+    { id: 'a', names: { en: 'Animals', pl: 'Zwierzęta', ar: 'حيوانات', de: 'Tiere' } },
+    { id: 'b', names: { en: 'Places', pl: 'Miejsca', ar: 'أماكن', de: 'Orte' } },
+    { id: 'c', names: { en: 'Food', pl: '', ar: '', de: '' } }
+  ];
+  value.items.forEach((item, index) => { item.categoryId = index < 3 ? 'a' : index < 6 ? 'b' : 'c'; });
+  assert.equal(games.readiness(value, 'de', 'ar').categorySort, 4);
+  const round = games.categorySortPlan(value, 'de', 'ar', () => .3);
+  assert.deepEqual(new Set(round.groups.map(group => group.name)), new Set(['حيوانات', 'أماكن']));
+  assert.equal(round.items.length, 4);
+  assert.ok(round.items.every(item => round.groups.some(group => group.id === item.categoryId)));
+  value.items[3].terms.ar = value.items[4].terms.ar;
+  assert.equal(games.readiness(value, 'de', 'ar').categorySort, 0);
+  assert.equal(games.categorySortPlan(value, 'ar', 'de'), null);
+});
+
 test('ambiguous repeated prompts and answers are excluded from recognition games', () => {
   const value = lesson(6);
   value.items[1].terms.en = value.items[0].terms.en;

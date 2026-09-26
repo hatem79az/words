@@ -64,6 +64,9 @@
           <form id="lesson-form">
             <label class="field-label" for="lesson-name" data-i18n="lessonName">Lesson name</label>
             <input id="lesson-name" name="lesson-name" maxlength="120" required autocomplete="off" data-i18n-placeholder="lessonNameExample" placeholder="For example, Animals">
+            <div class="section-heading"><h3 data-i18n="lessonCategories">Categories</h3><button id="add-category" class="button button-secondary" type="button" data-i18n="addCategory">Add category</button></div>
+            <p class="muted" data-i18n="categoryHint">Name each group in the languages you want to practise, then assign words below.</p>
+            <div id="category-list" class="category-list"></div>
             <div class="section-heading"><h3 data-i18n="wordsAndPhrases">Words and phrases</h3><button id="add-item" class="button button-secondary" type="button" data-i18n="addWord">Add word</button></div>
             <p class="muted" data-i18n="entryHint">Add at least two languages for each card. Leave other language fields empty if you like.</p>
             <p class="media-hint" data-i18n="mediaHint">Add pictures and pronunciation inside each word. Images are copied as compact WebP; your original files stay in place.</p>
@@ -91,6 +94,7 @@
               <option value="missing" data-i18n="missingLettersGame">Missing letters</option>
               <option value="picture" data-i18n="pictureChoice">Picture choice</option>
               <option value="pictureLabels" data-i18n="pictureLabels">Picture labels</option>
+              <option value="categorySort" data-i18n="categorySort">Category sort</option>
               <option value="listening" data-i18n="listenChoose">Listen and choose</option>
               <option value="listenType" data-i18n="listenType">Listen and type</option>
               <option value="guess" data-i18n="letterGuess">Letter guess</option>
